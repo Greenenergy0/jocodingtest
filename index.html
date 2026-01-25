@@ -6,15 +6,32 @@
     <title>휨불량 재작업 현황판</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>휨불량 재작업 현황판 (1/18 ~ 1/31)</h1>
+        <h1>휨불량 재작업 현황판</h1>
+
+        <div class="setup-section">
+            <h2>기간 설정</h2>
+            <div class="date-range-picker">
+                <input type="date" id="start-date">
+                <span>~</span>
+                <input type="date" id="end-date">
+                <button id="generate-range-btn">기간 생성</button>
+            </div>
+            <div class="io-buttons">
+                <label for="csv-upload" class="file-upload-label">CSV 불러오기</label>
+                <input type="file" id="csv-upload" accept=".csv" style="display: none;">
+                <button id="export-csv-btn">CSV로 저장</button>
+            </div>
+        </div>
+
         <div class="main-content">
             <div class="input-section">
                 <h2>일일 데이터 입력</h2>
                 <label for="date-select">날짜 선택:</label>
-                <select id="date-select"></select>
+                <select id="date-select" disabled></select>
                 <div class="form-group">
                     <label for="initial-inventory">전일 재고:</label>
                     <input type="number" id="initial-inventory" placeholder="자동 계산" readonly>
@@ -27,8 +44,7 @@
                     <label for="reworked">작업량:</label>
                     <input type="number" id="reworked" min="0">
                 </div>
-                <button id="save-btn">저장</button>
-                <button id="save-image-btn">이미지로 저장</button>
+                <button id="save-btn">입력</button>
             </div>
             <div id="summary-section" class="stats-section">
                 <h2>금일 통계</h2>
@@ -48,9 +64,12 @@
         </div>
         <div class="chart-container">
             <canvas id="inventory-chart"></canvas>
+            <div class="download-buttons">
+                 <button id="download-summary-btn">요약 이미지 다운로드</button>
+                 <button id="download-chart-btn">차트 이미지 다운로드</button>
+            </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="main.js"></script>
 </body>
 </html>
