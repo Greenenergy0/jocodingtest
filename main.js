@@ -258,9 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
             data: {
                 labels: labels,
                 datasets: [{
-                    type: 'line', label: '일일 재고', data: inventoryData,
-                    borderColor: '#3f51b5', backgroundColor: 'rgba(63, 81, 181, 0.1)',
-                    fill: true, tension: 0.1, yAxisID: 'y'
+                    type: 'bar', label: '일일 재고', data: inventoryData,
+                    backgroundColor: 'rgba(63, 81, 181, 0.5)',
+                    yAxisID: 'y'
                 }, {
                     type: 'bar', label: '신규 불량', data: newDefectsData,
                     backgroundColor: 'rgba(244, 67, 54, 0.7)', yAxisID: 'y'
