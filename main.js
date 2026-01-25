@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const newDefectsInput = document.getElementById('new-defects');
     const reworkedInput = document.getElementById('reworked');
     const saveBtn = document.getElementById('save-btn');
+    const saveImageBtn = document.getElementById('save-image-btn');
+    const containerToCapture = document.querySelector('.container');
 
     const statNewDefects = document.getElementById('stat-new-defects');
     const statReworked = document.getElementById('stat-reworked');
@@ -15,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data structure
     let dailyData = {};
     const dates = [];
+    let lastModifiedDateIndex = -1;
 
     // Initialize data for the period
     function initializeData() {
@@ -55,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = dailyData[date];
         const previousDate = getPreviousDate(date);
         
-        // The initial inventory of a day is the closing inventory of the previous day.
         const prevInventory = dailyData[previousDate] ? dailyData[previousDate].todayInventory : 0;
         data.initialInventory = prevInventory;
 
@@ -69,15 +71,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveData() {
         const selectedDate = dateSelect.value;
+        const selectedIndex = dates.indexOf(selectedDate);
         const newDefects = parseInt(newDefectsInput.value) || 0;
         const reworked = parseInt(reworkedInput.value) || 0;
+
+        if (newDefects > 0 || reworked > 0) {
+            lastModifiedDateIndex = Math.max(lastModifiedDateIndex, selectedIndex);
+        }
 
         const data = dailyData[selectedDate];
         data.newDefects = newDefects;
         data.reworked = reworked;
         data.todayInventory = data.initialInventory + newDefects - reworked;
 
-        // Propagate changes to subsequent days
         updateSubsequentDays(selectedDate);
         
         updateStats(selectedDate);
@@ -92,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dailyData[currentDate].initialInventory = dailyData[previousDate].todayInventory;
             dailyData[currentDate].todayInventory = dailyData[currentDate].initialInventory + dailyData[currentDate].newDefects - dailyData[currentDate].reworked;
         }
-        // after propagating changes, reload the data for the currently selected date to show the correct initial inventory if a previous day was modified.
         loadDataForDate(dateSelect.value);
     }
 
@@ -107,41 +112,45 @@ document.addEventListener('DOMContentLoaded', () => {
     // Chart.js instance
     let inventoryChart;
     function updateChart() {
-        const labels = dates;
-        const inventoryData = dates.map(date => dailyData[date].todayInventory);
-        const newDefectsData = dates.map(date => dailyData[date].newDefects);
-        const reworkedData = dates.map(date => dailyData[date].reworked);
+        const displayIndex = lastModifiedDateIndex === -1 ? dates.length -1 : lastModifiedDateIndex;
+        
+        const labels = dates.slice(0, displayIndex + 1);
+        const inventoryData = labels.map(date => dailyData[date].todayInventory);
+        const newDefectsData = labels.map(date => dailyData[date].newDefects);
+        const reworkedData = labels.map(date => dailyData[date].reworked);
 
         if (inventoryChart) {
             inventoryChart.destroy();
         }
 
         inventoryChart = new Chart(chartCanvas, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
                     {
+                        type: 'line',
                         label: '일일 재고',
                         data: inventoryData,
                         borderColor: '#3f51b5',
                         backgroundColor: 'rgba(63, 81, 181, 0.1)',
                         fill: true,
-                        tension: 0.1
+                        tension: 0.1,
+                        yAxisID: 'y'
                     },
                     {
+                        type: 'bar',
                         label: '신규 불량',
                         data: newDefectsData,
-                        borderColor: '#f44336',
-                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                        tension: 0.1
+                        backgroundColor: 'rgba(244, 67, 54, 0.7)',
+                        yAxisID: 'y'
                     },
                     {
+                        type: 'bar',
                         label: '작업량',
                         data: reworkedData,
-                        borderColor: '#4caf50',
-                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                        tension: 0.1
+                        backgroundColor: 'rgba(76, 175, 80, 0.7)',
+                        yAxisID: 'y'
                     }
                 ]
             },
@@ -155,16 +164,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        position: 'left'
                     }
                 }
             }
         });
     }
 
+    function captureAndSave() {
+        html2canvas(containerToCapture, {
+            onclone: (document) => {
+                // Ensure the canvas chart is redrawn in the cloned document for capture
+                // This can sometimes be necessary if the chart is rendered oddly
+            }
+        }).then(canvas => {
+            const image = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = image;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            link.download = `rework-summary-${timestamp}.png`;
+            link.click();
+        });
+    }
+
     // Event Listeners
     dateSelect.addEventListener('change', (e) => loadDataForDate(e.target.value));
     saveBtn.addEventListener('click', saveData);
+    saveImageBtn.addEventListener('click', captureAndSave);
 
     // Initial setup
     initializeData();
