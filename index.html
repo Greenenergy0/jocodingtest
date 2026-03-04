@@ -3,71 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>휨불량 재작업 현황판</title>
+    <title>당신을 위한 메시지</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>휨불량 재작업 현황판</h1>
-
-        <div class="setup-section">
-            <h2>기간 설정</h2>
-            <div class="date-range-picker">
-                <input type="date" id="start-date">
-                <span>~</span>
-                <input type="date" id="end-date">
-                <button id="generate-range-btn">기간 생성</button>
+        <h1>당신을 위한 메시지</h1>
+        <div class="input-form">
+            <div class="form-group">
+                <label for="name">이름</label>
+                <input type="text" id="name" placeholder="당신의 이름을 알려주세요">
             </div>
-            <div class="io-buttons">
-                <label for="csv-upload" class="file-upload-label">CSV 불러오기</label>
-                <input type="file" id="csv-upload" accept=".csv" style="display: none;">
-                <button id="export-csv-btn">CSV로 저장</button>
+            <div class="form-group">
+                <label for="age">나이</label>
+                <input type="number" id="age" placeholder="나이를 입력해주세요">
             </div>
+            <div class="form-group">
+                <label for="mood">오늘의 기분</label>
+                <select id="mood">
+                    <option value="happy">😄 행복해요</option>
+                    <option value="sad">😢 슬퍼요</option>
+                    <option value="anxious">😟 불안해요</option>
+                    <option value="tired">😫 피곤해요</option>
+                    <option value="angry">😠 화나요</option>
+                </select>
+            </div>
+            <button id="generate-btn">메시지 받기</button>
         </div>
-
-        <div class="main-content">
-            <div class="input-section">
-                <h2>일일 데이터 입력</h2>
-                <label for="date-select">날짜 선택:</label>
-                <select id="date-select" disabled></select>
-                <div class="form-group">
-                    <label for="initial-inventory">전일 재고:</label>
-                    <input type="number" id="initial-inventory" placeholder="자동 계산" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="new-defects">신규 불량 발생:</label>
-                    <input type="number" id="new-defects" min="0">
-                </div>
-                <div class="form-group">
-                    <label for="reworked">작업량:</label>
-                    <input type="number" id="reworked" min="0">
-                </div>
-                <button id="save-btn">입력</button>
-            </div>
-            <div id="summary-section" class="stats-section">
-                <h2>금일 통계</h2>
-                <div class="stat-item">
-                    <span>신규 불량:</span>
-                    <span id="stat-new-defects">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>작업량:</span>
-                    <span id="stat-reworked">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>금일 재고:</span>
-                    <span id="stat-today-inventory">0</span>
-                </div>
-            </div>
-        </div>
-        <div class="chart-container">
-            <canvas id="inventory-chart"></canvas>
-            <div class="download-buttons">
-                 <button id="download-summary-btn">요약 이미지 다운로드</button>
-                 <button id="download-chart-btn">차트 이미지 다운로드</button>
-            </div>
+        <div id="message-display" class="message-container">
+            <p>여기에 당신을 위한 메시지가 표시됩니다.</p>
         </div>
     </div>
     <script src="main.js"></script>
