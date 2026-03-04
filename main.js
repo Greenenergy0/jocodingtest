@@ -1,9 +1,10 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const nameInput = document.getElementById('name');
-    const ageInput = document.getElementById('age');
-    const moodSelect = document.getElementById('mood');
-    const generateBtn = document.getElementById('generate-btn');
-    const messageDisplay = document.getElementById('message-display');
+const moodHistoryList = document.getElementById('mood-history-list');
+
+    let userData = {
+        name: '',
+        age: '',
+        history: []
+    };
 
     const messages = {
         happy: [
@@ -33,6 +34,33 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
     };
 
+    const renderHistory = () => {
+        moodHistoryList.innerHTML = '';
+        userData.history.forEach(entry => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${entry.date}: ${entry.mood}`;
+            moodHistoryList.appendChild(listItem);
+        });
+    };
+
+    const loadUserData = () => {
+        const savedData = localStorage.getItem('comfortMessageUserData');
+        if (savedData) {
+            userData = JSON.parse(savedData);
+            nameInput.value = userData.name;
+            ageInput.value = userData.age;
+            if (userData.history.length > 0) {
+                 const lastMood = userData.history[userData.history.length - 1].mood;
+                 messageDisplay.innerHTML = `<p>${userData.name}님, 다시 방문해주셨네요! 마지막으로 방문했을 때의 기분은 '${lastMood}'이었어요. 오늘은 어떠신가요?</p>`;
+            }
+            renderHistory();
+        }
+    };
+
+    const saveUserData = () => {
+        localStorage.setItem('comfortMessageUserData', JSON.stringify(userData));
+    };
+
     const generateMessage = () => {
         const name = nameInput.value || '당신';
         const age = ageInput.value;
@@ -42,15 +70,38 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('나이를 입력해주세요!');
             return;
         }
+        
+        userData.name = name;
+        userData.age = age;
+
+        let message = '';
+        const history = userData.history;
+
+        if (history.length > 0) {
+            const lastMood = history[history.length - 1].mood;
+            if (lastMood !== mood) {
+                 message = `어제는 기분이 '${lastMood}'이셨는데, 오늘은 '${mood}'이시군요. `;
+            }
+        }
 
         const moodMessages = messages[mood];
         const randomIndex = Math.floor(Math.random() * moodMessages.length);
-        let message = moodMessages[randomIndex];
-
-        message = message.replace('{name}', name);
+        message += moodMessages[randomIndex].replace('{name}', name);
+        
+        // Add new entry to history
+        userData.history.push({ date: new Date().toISOString().split('T')[0], mood: mood });
+        
+        // Keep history to a reasonable size, e.g., last 10 entries
+        if (userData.history.length > 10) {
+            userData.history.shift();
+        }
 
         messageDisplay.innerHTML = `<p>${message}</p>`;
+        saveUserData();
+        renderHistory();
     };
 
     generateBtn.addEventListener('click', generateMessage);
+
+    loadUserData();
 });
