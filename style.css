@@ -80,10 +80,73 @@ button:hover {
     align-items: center;
 }
 
+.message-container {
+    background-color: #e8eaf6;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    text-align: left;
+}
+
+.message-container h3 {
+    color: #303f9f;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #c5cae9;
+    padding-bottom: 5px;
+}
+
 .message-container p {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: #1a237e;
     line-height: 1.6;
+    margin: 0 0 15px 0;
+}
+
+
+.fun-factors-container {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.fun-factors-container h2 {
+    text-align: center;
+    color: #3f51b5;
+    margin-bottom: 20px;
+}
+
+.factors {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.factor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.factor span:first-child {
+    font-weight: bold;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.factor span:last-child {
+    font-weight: bold;
+    font-size: 1.4rem;
+    color: #3f51b5;
+}
+
+#lucky-color {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
 }
 
 .history-container {

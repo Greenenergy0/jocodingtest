@@ -15,10 +15,6 @@
                 <input type="text" id="name" placeholder="당신의 이름을 알려주세요">
             </div>
             <div class="form-group">
-                <label for="age">나이</label>
-                <input type="number" id="age" placeholder="나이를 입력해주세요">
-            </div>
-            <div class="form-group">
                 <label for="mood">오늘의 기분</label>
                 <select id="mood">
                     <option value="happy">😄 행복해요</option>
@@ -28,11 +24,50 @@
                     <option value="angry">😠 화나요</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="situation">오늘의 상황</label>
+                <select id="situation">
+                    <option value="work">💼 일/커리어</option>
+                    <option value="money">💰 돈/재물</option>
+                    <option value="relationships">👥 인간관계</option>
+                    <option value="mind">🧠 마음/고민</option>
+                    <option value="growth">🌱 성장/목표</option>
+                </select>
+            </div>
             <button id="generate-btn">메시지 받기</button>
         </div>
-        <div id="message-display" class="message-container">
-            <p>여기에 당신을 위한 메시지가 표시됩니다.</p>
+
+        <div id="fun-factors" class="fun-factors-container">
+            <h2>오늘의 행운 요소</h2>
+            <div class="factors">
+                <div class="factor">
+                    <span>행운 확률</span>
+                    <span id="lucky-chance">-%</span>
+                </div>
+                <div class="factor">
+                    <span>에너지 레벨</span>
+                    <span id="energy-level">-%</span>
+                </div>
+                <div class="factor">
+                    <span>추천 숫자</span>
+                    <span id="lucky-number">-</span>
+                </div>
+                <div class="factor">
+                    <span>어울리는 색깔</span>
+                    <div id="lucky-color"></div>
+                </div>
+            </div>
         </div>
+
+        <div id="message-display" class="message-container">
+            <h3>오늘의 메시지</h3>
+            <p id="message-step1"></p>
+            <h3>질문</h3>
+            <p id="message-step2"></p>
+            <h3>행동 지침</h3>
+            <p id="message-step3"></p>
+        </div>
+
         <div class="history-container">
             <h2>방문 기록</h2>
             <ul id="mood-history-list"></ul>
