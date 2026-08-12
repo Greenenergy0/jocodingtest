@@ -2041,13 +2041,42 @@ $("#edit-table").addEventListener("click", e => {
 /* ============================================================
    파일 · 공유 · 내보내기
    ============================================================ */
-function download(name, mime, data){
-  const blob = new Blob([data], { type:mime + ";charset=utf-8" });
+/* 내려받기 — 직접 호스팅할 때는 브라우저 기본 동작을, 뷰어 안에서는
+   뷰어가 중개하는 저장을 쓴다. 어느 쪽이든 버튼 하나로 동작한다. */
+const DL_MSG = {
+  too_large: "파일이 너무 커서 저장할 수 없습니다.",
+  rate_limited: "저장 확인 창이 이미 열려 있습니다. 잠시 뒤에 다시 눌러 주세요.",
+  bad_request: "파일을 만들지 못했습니다.",
+  transform_error: "파일을 만들지 못했습니다.",
+  rejected_extension: "이 형식은 저장할 수 없습니다."
+};
+function browserDownload(name, mime, data){
+  const blob = data instanceof Blob ? data : new Blob([data], { type:mime + ";charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+async function download(name, mime, data){
+  const dl = window.claude && window.claude.downloads;
+  if(!dl){ browserDownload(name, mime, data); return; }
+  try{
+    await dl.save({ filename:name, data });
+  }catch(err){
+    const code = err && err.code;
+    if(code === "declined") return;
+    // csv · svg 는 뷰어 설정에 따라 막힐 수 있다 — 내용은 그대로 두고 확장자만 바꿔 다시 권한다
+    if(code === "extension_not_enabled"){
+      try{
+        await dl.save({ filename:name.replace(/\.[^.]+$/, ".txt"), data });
+        return;
+      }catch(e2){
+        if(e2 && e2.code === "declined") return;
+      }
+    }
+    alert(DL_MSG[code] || "이 화면에서는 파일 저장을 쓸 수 없습니다.");
+  }
 }
 function stamp(){
   const d = new Date();
@@ -2172,13 +2201,7 @@ $("#btn-png").addEventListener("click", () => {
     ctx.fillStyle = tokens().surface;
     ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.drawImage(img, 0, 0, cv.width, cv.height);
-    cv.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `샘플플로우_${activeView}_${stamp()}.png`;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }, "image/png");
+    cv.toBlob(blob => download(`샘플플로우_${activeView}_${stamp()}.png`, "image/png", blob), "image/png");
   };
   img.onerror = () => alert("이미지를 만들지 못했습니다. SVG로 저장한 뒤 변환해 주세요.");
   img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(data);
