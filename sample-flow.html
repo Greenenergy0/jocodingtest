@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>샘플 플로우 보드</title>
+<style>
+/* ============================================================
+   토큰 — 라이트가 기본, 다크는 토큰만 재정의
+   ============================================================ */
+:root{
+  --ground:#EEF2F1;
+  --surface:#FFFFFF;
+  --surface-2:#F6FAF9;
+  --surface-3:#EAF0EE;
+  --ink:#141A19;
+  --ink-2:#3D4745;
+  --muted:#6B7674;
+  --line:#DCE3E1;
+  --line-2:#C3CDCA;
+  --accent:#0E6D62;
+  --accent-ink:#0B554C;
+  --accent-soft:#DCEEEA;
+  --ok:#1E7A4E;
+  --warn:#9C6B0E;
+  --crit:#AF3A2E;
+  --idle:#8C9694;
+  --lv-cell:#5AA6AC;
+  --lv-pack:#3B7F9B;
+  --lv-rack:#2C5B87;
+  --lv-link:#2B3C69;
+  --test:#B4531A;
+  --reuse:#3E7A36;
+  --band:rgba(20,26,25,.028);
+  --chip-bg:rgba(255,255,255,.88);
+  --shadow:0 1px 2px rgba(16,32,29,.05), 0 10px 28px rgba(16,32,29,.06);
+  --focus:#0E6D62;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1312;
+    --surface:#161D1C;
+    --surface-2:#1B2322;
+    --surface-3:#212B29;
+    --ink:#E7EEEB;
+    --ink-2:#B7C2BF;
+    --muted:#8A9895;
+    --line:#293331;
+    --line-2:#3B4745;
+    --accent:#4ECEB9;
+    --accent-ink:#8BE3D3;
+    --accent-soft:#12332E;
+    --ok:#4BBF83;
+    --warn:#D9A63C;
+    --crit:#E8705F;
+    --idle:#6C7A77;
+    --lv-cell:#7CC6CB;
+    --lv-pack:#5AA4C2;
+    --lv-rack:#6194C7;
+    --lv-link:#8496D6;
+    --test:#E28C50;
+    --reuse:#7EBD6E;
+    --band:rgba(255,255,255,.028);
+    --chip-bg:rgba(22,29,28,.88);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.32);
+    --focus:#4ECEB9;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1312;
+  --surface:#161D1C;
+  --surface-2:#1B2322;
+  --surface-3:#212B29;
+  --ink:#E7EEEB;
+  --ink-2:#B7C2BF;
+  --muted:#8A9895;
+  --line:#293331;
+  --line-2:#3B4745;
+  --accent:#4ECEB9;
+  --accent-ink:#8BE3D3;
+  --accent-soft:#12332E;
+  --ok:#4BBF83;
+  --warn:#D9A63C;
+  --crit:#E8705F;
+  --idle:#6C7A77;
+  --lv-cell:#7CC6CB;
+  --lv-pack:#5AA4C2;
+  --lv-rack:#6194C7;
+  --lv-link:#8496D6;
+  --test:#E28C50;
+  --reuse:#7EBD6E;
+  --band:rgba(255,255,255,.028);
+  --chip-bg:rgba(22,29,28,.88);
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.32);
+  --focus:#4ECEB9;
+}
+
+*,*::before,*::after{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Malgun Gothic",sans-serif;
+  font-size:14px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{
+  font-family:ui-monospace,"SFMono-Regular","SF Mono","Cascadia Mono","JetBrains Mono","D2Coding",Menlo,Consolas,monospace;
+}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px;}
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms !important;animation-duration:.01ms !important;}
+}
+
+/* ============================================================
+   셸
+   ============================================================ */
+.shell{max-width:1560px;margin:0 auto;padding:20px 20px 48px;}
+
+.masthead{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:20px;flex-wrap:wrap;
+  padding-bottom:14px;margin-bottom:18px;
+  border-bottom:1px solid var(--line);
+}
+.masthead h1{
+  margin:0;font-size:21px;font-weight:650;letter-spacing:-.015em;
+  text-wrap:balance;
+}
+.masthead .lede{margin:3px 0 0;color:var(--muted);font-size:12.5px;max-width:62ch;}
+.masthead .eyebrow{
+  font-size:10.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 5px;
+}
+.mast-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+/* 버튼 */
+.btn{
+  appearance:none;border:1px solid var(--line-2);background:var(--surface);
+  color:var(--ink-2);border-radius:7px;padding:6px 11px;
+  font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;
+  transition:background .14s ease,border-color .14s ease,color .14s ease;
+  white-space:nowrap;
+}
+.btn:hover{background:var(--surface-3);color:var(--ink);border-color:var(--line-2);}
+.btn:active{transform:translateY(.5px);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+:root[data-theme="dark"] .btn-primary{color:#08201D;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn-primary{color:#08201D;}}
+.btn-primary:hover{background:var(--accent-ink);border-color:var(--accent-ink);color:#fff;}
+:root[data-theme="dark"] .btn-primary:hover{color:#08201D;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn-primary:hover{color:#08201D;}}
+.btn-sm{padding:3px 8px;font-size:11.5px;border-radius:6px;}
+
+/* ============================================================
+   레이아웃
+   ============================================================ */
+.work{display:grid;grid-template-columns:minmax(340px,392px) minmax(0,1fr);gap:18px;align-items:start;}
+@media (max-width:1080px){.work{grid-template-columns:minmax(0,1fr);}}
+/* 그리드 칸이 내용에 밀려 넓어지지 않도록 — 넘치는 그림은 캔버스 안에서 스크롤된다 */
+.work > *{min-width:0;}
+
+.panel{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);
+}
+.panel-head h2{margin:0;font-size:13px;font-weight:640;letter-spacing:-.005em;}
+.panel-head .hint{font-size:11.5px;color:var(--muted);}
+.note{margin:0 0 10px;font-size:11.5px;line-height:1.6;color:var(--muted);}
+.note code{background:var(--surface-3);padding:1px 5px;border-radius:4px;font-family:inherit;}
+
+/* 탭 */
+.tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line);background:var(--surface-2);overflow-x:auto;}
+.tab{
+  appearance:none;border:1px solid transparent;border-bottom:none;background:none;
+  color:var(--muted);font:inherit;font-size:12.5px;font-weight:550;
+  padding:7px 12px;border-radius:8px 8px 0 0;cursor:pointer;white-space:nowrap;
+  transition:color .14s ease,background .14s ease;
+}
+.tab:hover{color:var(--ink-2);background:var(--surface-3);}
+.tab[aria-selected="true"]{
+  color:var(--accent);background:var(--surface);
+  border-color:var(--line);border-bottom:1px solid var(--surface);
+  margin-bottom:-1px;
+}
+.tabpanel{padding:14px;}
+.tabpanel[hidden]{display:none;}
+
+/* ============================================================
+   입력 콘솔
+   ============================================================ */
+.editor-wrap{position:relative;}
+textarea#dsl{
+  width:100%;min-height:430px;resize:vertical;
+  background:var(--surface-2);color:var(--ink);
+  border:1px solid var(--line);border-radius:9px;
+  padding:11px 12px;font-size:12.5px;line-height:1.75;
+  tab-size:2;
+}
+textarea#dsl::placeholder{color:var(--idle);}
+.editor-wrap.drag-over textarea#dsl{border-color:var(--accent);background:var(--accent-soft);}
+.drop-note{
+  position:absolute;inset:0;display:none;place-items:center;
+  border-radius:9px;background:var(--accent-soft);color:var(--accent-ink);
+  font-size:13px;font-weight:600;pointer-events:none;
+}
+.editor-wrap.drag-over .drop-note{display:grid;}
+
+.syntax{
+  margin:10px 0 0;padding:10px 12px;border:1px dashed var(--line-2);border-radius:9px;
+  background:var(--surface-2);
+}
+.syntax summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--ink-2);}
+.syntax summary::marker{color:var(--muted);}
+.syntax dl{margin:9px 0 0;display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:11.5px;}
+.syntax dt{color:var(--accent);font-weight:600;}
+.syntax dd{margin:0;color:var(--muted);}
+.syntax code{background:var(--surface-3);padding:1px 5px;border-radius:4px;font-size:11px;}
+
+.errors{margin-top:10px;display:flex;flex-direction:column;gap:5px;}
+.err{
+  display:flex;gap:8px;align-items:baseline;
+  font-size:11.5px;padding:6px 9px;border-radius:7px;
+  background:color-mix(in srgb,var(--crit) 10%,transparent);
+  color:var(--crit);border:1px solid color-mix(in srgb,var(--crit) 26%,transparent);
+}
+.err b{font-weight:700;flex:none;}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+
+/* 빠른 추가 폼 */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field.wide{grid-column:1 / -1;}
+.field label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.02em;}
+.field input,.field select,.field textarea{
+  font:inherit;font-size:12.5px;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%;
+}
+.field input:hover,.field select:hover{border-color:var(--line-2);}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface-2);}
+.seg button{
+  flex:1;appearance:none;border:none;background:none;font:inherit;font-size:12px;font-weight:550;
+  color:var(--muted);padding:7px 4px;cursor:pointer;transition:background .14s,color .14s;
+}
+.seg button+button{border-left:1px solid var(--line);}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#08201D;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{color:#08201D;}}
+
+/* 표 편집 */
+.table-scroll{overflow-x:auto;max-height:520px;overflow-y:auto;border:1px solid var(--line);border-radius:9px;}
+/* 칸이 좁아 글씨가 잘리느니 표째로 옆으로 밀리게 둔다 */
+table.grid{border-collapse:collapse;width:100%;min-width:568px;font-size:12px;table-layout:fixed;}
+table.grid th{
+  position:sticky;top:0;z-index:1;background:var(--surface-2);
+  text-align:left;font-size:10.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+table.grid td{padding:4px 5px;border-bottom:1px solid var(--line);vertical-align:middle;overflow:hidden;}
+table.grid tr:last-child td{border-bottom:none;}
+table.grid tbody tr:hover{background:var(--surface-2);}
+table.grid input,table.grid select{
+  font:inherit;font-size:12px;color:var(--ink);background:transparent;
+  border:1px solid transparent;border-radius:5px;padding:3px 4px;width:100%;min-width:0;
+}
+table.grid input:hover,table.grid select:hover{border-color:var(--line);background:var(--surface);}
+table.grid input:focus,table.grid select:focus{border-color:var(--accent);background:var(--surface);}
+table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
+.row-del{
+  appearance:none;border:none;background:none;color:var(--idle);cursor:pointer;
+  font-size:15px;line-height:1;padding:3px 6px;border-radius:5px;
+}
+.row-del:hover{color:var(--crit);background:color-mix(in srgb,var(--crit) 12%,transparent);}
+.sect-row td{
+  background:var(--surface-3);font-size:10.5px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-2);padding:6px 8px;
+}
+
+/* ============================================================
+   KPI
+   ============================================================ */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:14px;}
+.kpi{
+  background:var(--surface);border:1px solid var(--line);border-radius:11px;
+  padding:11px 13px;box-shadow:var(--shadow);
+}
+.kpi .k-label{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+.kpi .k-value{font-size:24px;font-weight:600;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.15;}
+.kpi .k-value small{font-size:12px;font-weight:500;color:var(--muted);margin-left:2px;letter-spacing:0;}
+.kpi .k-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.meter{display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--surface-3);margin-top:8px;}
+.meter span{display:block;height:100%;}
+
+/* ============================================================
+   캔버스 / 범례
+   ============================================================ */
+.canvas{padding:6px 8px 12px;overflow-x:auto;}
+/* 좁은 화면에서 그림을 짜부러뜨리는 대신 가로로 밀어 보게 한다 */
+.canvas svg{display:block;width:auto;max-width:100%;min-width:760px;height:auto;}
+.legend{
+  display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;
+  padding:10px 14px;border-top:1px solid var(--line);background:var(--surface-2);
+  font-size:11.5px;color:var(--muted);
+}
+.legend .lg{display:inline-flex;align-items:center;gap:6px;}
+.legend .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+.legend .ring{width:9px;height:9px;border-radius:50%;border:2px solid var(--line-2);background:var(--surface);flex:none;box-sizing:border-box;}
+.legend .dash{width:16px;height:0;border-top:2px dashed var(--line-2);flex:none;}
+
+.empty{
+  padding:56px 24px;text-align:center;color:var(--muted);
+}
+.empty h3{margin:0 0 6px;font-size:15px;color:var(--ink-2);font-weight:600;}
+.empty p{margin:0;font-size:12.5px;}
+
+/* 구성 트리 */
+.tree{padding:16px 18px;display:flex;flex-direction:column;gap:0;}
+.rung{border-left:2px solid var(--line);padding:0 0 0 16px;margin-left:5px;}
+.rung.top{border-left:none;padding-left:0;margin-left:0;}
+.rung-head{display:flex;align-items:center;gap:9px;padding:7px 0 5px;}
+.rung-dot{width:11px;height:11px;border-radius:3px;flex:none;}
+.rung-name{font-size:13px;font-weight:650;}
+.rung-meta{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
+.parts{display:flex;flex-direction:column;gap:4px;padding:2px 0 8px;max-width:660px;}
+.part{
+  display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;
+  padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);
+  font-size:12px;
+}
+.part.addon{border-style:dashed;background:transparent;}
+.part .p-name{font-weight:520;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.part .p-qty{font-variant-numeric:tabular-nums;color:var(--muted);font-size:11.5px;}
+.subhead{font-size:10.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 0 2px;}
+
+.pill{
+  display:inline-block;font-size:10.5px;font-weight:650;letter-spacing:.02em;
+  padding:1px 7px;border-radius:999px;border:1px solid currentColor;white-space:nowrap;
+}
+.pill.v{color:var(--idle);}
+.pill.v-imp{color:#fff;background:var(--accent);border-color:var(--accent);}
+:root[data-theme="dark"] .pill.v-imp{color:#08201D;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.v-imp{color:#08201D;}}
+.pill.st-done{color:var(--ok);}
+.pill.st-wip{color:var(--warn);}
+.pill.st-idle{color:var(--idle);}
+
+.footnote{margin-top:16px;font-size:11.5px;color:var(--muted);text-align:center;}
+.footnote code{background:var(--surface-3);padding:1px 5px;border-radius:4px;}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Cell · Pack · Rack · Link</p>
+      <h1>샘플 플로우 보드</h1>
+      <p class="lede">레벨별 본품과 추가구성품의 생산·입고·조립·출하 진행, v1/v2 개선 이력, 조립 샘플의 시험 투입과 시험 후 재활용까지 한 장으로 봅니다. 왼쪽에 자유롭게 적으면 오른쪽이 즉시 다시 그려집니다.</p>
+    </div>
+    <div class="mast-actions">
+      <button class="btn" id="btn-theme" type="button">테마 전환</button>
+      <button class="btn" id="btn-share" type="button">공유 링크 복사</button>
+      <button class="btn" id="btn-png" type="button">현재 화면 PNG</button>
+    </div>
+  </header>
+
+  <div class="work">
+
+    <!-- ── 입력 콘솔 ─────────────────────────────── -->
+    <section class="panel" aria-label="입력">
+      <div class="tabs" role="tablist" aria-label="입력 방식">
+        <button class="tab" role="tab" id="t-text" aria-controls="p-text" aria-selected="true">텍스트</button>
+        <button class="tab" role="tab" id="t-form" aria-controls="p-form" aria-selected="false">한 줄 추가</button>
+        <button class="tab" role="tab" id="t-table" aria-controls="p-table" aria-selected="false">표 편집</button>
+        <button class="tab" role="tab" id="t-file" aria-controls="p-file" aria-selected="false">파일</button>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="p-text" aria-labelledby="t-text">
+        <div class="editor-wrap" id="editor-wrap">
+          <label class="sr-only" for="dsl">샘플 플로우 입력</label>
+          <textarea id="dsl" class="mono" spellcheck="false" placeholder="[품목]&#10;셀 | 각형 LFP 100Ah | v1 | 320 | 출하"></textarea>
+          <div class="drop-note">파일을 놓으면 불러옵니다</div>
+        </div>
+
+        <details class="syntax">
+          <summary>쓰는 법 — 한 줄에 하나, 막대(<code>|</code>)로 구분</summary>
+          <dl>
+            <dt>[품목]</dt><dd>레벨 | 품목명 | 버전 | 수량 | 단계 | 비고</dd>
+            <dt>레벨</dt><dd><code>셀</code> <code>팩</code> <code>랙</code> <code>링크</code> (cell/pack/rack/link도 인식)</dd>
+            <dt>추가구성품</dt><dd>품목명 앞에 <code>+</code> — 예: <code>+ 냉각 플레이트</code></dd>
+            <dt>버전</dt><dd><code>v1</code> <code>v2</code> … 생략하면 v1</dd>
+            <dt>단계</dt><dd><code>생산</code> <code>입고</code> <code>조립</code> <code>출하</code> · 뒤에 <code>중</code>을 붙이면 진행 중 (<code>조립중</code>)</dd>
+            <dt>[시험]</dt><dd>시험명 | 대상 | 수량 | 일정 | 결과(<code>대기</code>/<code>진행중</code>/<code>합격</code>/<code>불합격</code>) | 비고</dd>
+            <dt>[재활용]</dt><dd>용도 | 출처 시험명 | 수량 | 비고</dd>
+            <dt>주석</dt><dd><code>#</code> 로 시작하는 줄과 빈 줄은 무시합니다</dd>
+          </dl>
+        </details>
+
+        <div class="errors" id="errors"></div>
+
+        <div class="toolbar">
+          <button class="btn btn-sm" id="btn-preset" type="button">예시 데이터</button>
+          <button class="btn btn-sm" id="btn-clear" type="button">비우기</button>
+          <button class="btn btn-sm" id="btn-fmt" type="button">줄 정렬</button>
+        </div>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="p-form" aria-labelledby="t-form" hidden>
+        <div class="seg" id="kind-seg" role="group" aria-label="추가할 항목 종류">
+          <button type="button" data-kind="item" aria-pressed="true">품목</button>
+          <button type="button" data-kind="test" aria-pressed="false">시험</button>
+          <button type="button" data-kind="reuse" aria-pressed="false">재활용</button>
+        </div>
+
+        <form id="quick-item" class="form-grid" style="margin-top:12px;">
+          <div class="field"><label for="q-level">레벨</label>
+            <select id="q-level"><option value="cell">셀</option><option value="pack">팩</option><option value="rack">랙</option><option value="link">링크</option></select>
+          </div>
+          <div class="field"><label for="q-kind">구분</label>
+            <select id="q-kind"><option value="main">본품</option><option value="addon">추가구성품</option></select>
+          </div>
+          <div class="field wide"><label for="q-name">품목명</label>
+            <input id="q-name" type="text" placeholder="예: 1P16S 모듈" required>
+          </div>
+          <div class="field"><label for="q-ver">버전</label>
+            <select id="q-ver"><option>v1</option><option>v2</option><option>v3</option><option>v4</option></select>
+          </div>
+          <div class="field"><label for="q-qty">수량</label>
+            <input id="q-qty" type="number" min="1" step="1" value="1">
+          </div>
+          <div class="field wide"><label for="q-stage">진행 단계</label>
+            <select id="q-stage">
+              <option value="생산중">생산 중</option><option value="생산">생산 완료</option>
+              <option value="입고중">입고 중</option><option value="입고">입고 완료</option>
+              <option value="조립중">조립 중</option><option value="조립">조립 완료</option>
+              <option value="출하중">출하 중</option><option value="출하">출하 완료</option>
+            </select>
+          </div>
+          <div class="field wide"><label for="q-note">비고</label>
+            <input id="q-note" type="text" placeholder="선택 입력">
+          </div>
+          <div class="field wide"><button class="btn btn-primary" type="submit">품목 추가</button></div>
+        </form>
+
+        <form id="quick-test" class="form-grid" style="margin-top:12px;" hidden>
+          <div class="field wide"><label for="qt-name">시험명</label>
+            <input id="qt-name" type="text" placeholder="예: 랙 화재 전이(UL 9540A)" required>
+          </div>
+          <div class="field"><label for="qt-target">시험 대상</label>
+            <select id="qt-target"></select>
+          </div>
+          <div class="field"><label for="qt-qty">투입 수량</label>
+            <input id="qt-qty" type="number" min="1" step="1" value="1">
+          </div>
+          <div class="field"><label for="qt-date">일정</label>
+            <input id="qt-date" type="date">
+          </div>
+          <div class="field"><label for="qt-result">결과</label>
+            <select id="qt-result"><option>대기</option><option>진행중</option><option>합격</option><option>불합격</option></select>
+          </div>
+          <div class="field wide"><label for="qt-note">비고</label>
+            <input id="qt-note" type="text" placeholder="선택 입력">
+          </div>
+          <div class="field wide"><button class="btn btn-primary" type="submit">시험 추가</button></div>
+        </form>
+
+        <form id="quick-reuse" class="form-grid" style="margin-top:12px;" hidden>
+          <div class="field wide"><label for="qr-name">재활용 용도</label>
+            <input id="qr-name" type="text" placeholder="예: 해체 분석용" required>
+          </div>
+          <div class="field"><label for="qr-from">출처 시험</label>
+            <select id="qr-from"></select>
+          </div>
+          <div class="field"><label for="qr-qty">수량</label>
+            <input id="qr-qty" type="number" min="1" step="1" value="1">
+          </div>
+          <div class="field wide"><label for="qr-note">비고</label>
+            <input id="qr-note" type="text" placeholder="선택 입력">
+          </div>
+          <div class="field wide"><button class="btn btn-primary" type="submit">재활용 추가</button></div>
+        </form>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="p-table" aria-labelledby="t-table" hidden>
+        <p class="note">칸을 고치면 텍스트 탭의 해당 줄만 바뀝니다. 직접 쓴 주석과 줄 간격은 그대로 남습니다.</p>
+        <div class="table-scroll"><table class="grid" id="edit-table"></table></div>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="p-file" aria-labelledby="t-file" hidden>
+        <div class="field" style="gap:8px;">
+          <label>불러오기</label>
+          <input type="file" id="file-input" accept=".txt,.json,.csv,text/plain,application/json,text/csv">
+          <p class="note" style="margin-top:4px;">
+            <code>.txt</code> 는 이 화면의 문법 그대로, <code>.json</code> 은 내보낸 구조 그대로,
+            <code>.csv</code> 는 <code>종류,레벨,품목명,버전,수량,단계,비고</code> 순서로 읽습니다.
+            텍스트 탭에 파일을 끌어다 놓아도 됩니다.
+          </p>
+        </div>
+        <div class="toolbar" style="margin-top:14px;">
+          <button class="btn btn-sm" id="btn-exp-txt" type="button">텍스트 내보내기</button>
+          <button class="btn btn-sm" id="btn-exp-json" type="button">JSON 내보내기</button>
+          <button class="btn btn-sm" id="btn-exp-csv" type="button">CSV 내보내기</button>
+          <button class="btn btn-sm" id="btn-exp-svg" type="button">현재 화면 SVG</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 뷰어 ─────────────────────────────── -->
+    <div>
+      <div class="kpis" id="kpis"></div>
+
+      <section class="panel" aria-label="플로우">
+        <div class="tabs" role="tablist" aria-label="보기 방식">
+          <button class="tab" role="tab" id="v-flow" aria-controls="pv-flow" aria-selected="true">공정 플로우</button>
+          <button class="tab" role="tab" id="v-test" aria-controls="pv-test" aria-selected="false">시험 · 재활용</button>
+          <button class="tab" role="tab" id="v-tree" aria-controls="pv-tree" aria-selected="false">구성 트리</button>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="pv-flow" aria-labelledby="v-flow" style="padding:0;">
+          <div class="canvas" id="canvas-flow"></div>
+          <div class="legend">
+            <span class="lg"><span class="dot" style="background:var(--ok)"></span>단계 완료</span>
+            <span class="lg"><span class="ring" style="border-color:var(--warn)"></span>진행 중</span>
+            <span class="lg"><span class="ring"></span>미도달</span>
+            <span class="lg"><span class="dash"></span>추가구성품</span>
+            <span class="lg" style="margin-left:auto;">색이 진해질수록 상위 레벨 — 셀 → 팩 → 랙 → 링크</span>
+          </div>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="pv-test" aria-labelledby="v-test" hidden style="padding:0;">
+          <div class="canvas" id="canvas-sankey"></div>
+          <div class="legend">
+            <span class="lg"><span class="dot" style="background:var(--test)"></span>시험</span>
+            <span class="lg"><span class="dot" style="background:var(--reuse)"></span>재활용 용도</span>
+            <span class="lg"><span class="dot" style="background:var(--idle)"></span>아직 용도 미정</span>
+            <span class="lg" style="margin-left:auto;">띠 두께 = 샘플 수량</span>
+          </div>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="pv-tree" aria-labelledby="v-tree" hidden style="padding:0;">
+          <div id="canvas-tree"></div>
+        </div>
+      </section>
+
+      <p class="footnote">입력은 이 브라우저에만 저장됩니다. <code>공유 링크 복사</code> 를 누르면 내용이 통째로 담긴 주소가 만들어집니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   도메인 상수
+   ============================================================ */
+const LEVELS = [
+  { id:"cell", ko:"셀",   token:"--lv-cell", alias:["셀","cell","전지"] },
+  { id:"pack", ko:"팩",   token:"--lv-pack", alias:["팩","pack","모듈","module"] },
+  { id:"rack", ko:"랙",   token:"--lv-rack", alias:["랙","rack"] },
+  { id:"link", ko:"링크", token:"--lv-link", alias:["링크","link","뱅크","bank"] }
+];
+const LEVEL_BY_ID = Object.fromEntries(LEVELS.map(l => [l.id, l]));
+const STAGES = [
+  { id:"produce",  ko:"생산", desc:"제작 착수" },
+  { id:"receive",  ko:"입고", desc:"수입 검사" },
+  { id:"assemble", ko:"조립", desc:"상위 결합" },
+  { id:"ship",     ko:"출하", desc:"시험동 반출" }
+];
+const RESULTS = ["대기","진행중","합격","불합격"];
+const SECTIONS = {
+  item:  { key:"item",  head:"[품목]",   alias:["품목","items","item","구성품"] },
+  test:  { key:"test",  head:"[시험]",   alias:["시험","tests","test","평가"] },
+  reuse: { key:"reuse", head:"[재활용]", alias:["재활용","reuse","recycle","활용"] }
+};
+
+const PRESET = `# 2026 상반기 ESS 샘플 플로우
+# 레벨 | 품목명 | 버전 | 수량 | 단계 | 비고
+# 품목명 앞의 + 는 추가구성품, 단계 뒤의 '중'은 진행 중
+
+[품목]
+셀 | 각형 LFP 100Ah | v1 | 320 | 출하 | 초도 물량
+셀 | 각형 LFP 100Ah | v2 | 160 | 조립 | 벤트 개구 면적 확대
+셀 | + 셀 홀더 | v1 | 80 | 입고 |
+셀 | + 절연 필름 | v2 | 80 | 입고 | 두께 0.25 → 0.30t
+팩 | 1P16S 모듈 | v1 | 20 | 출하 |
+팩 | 1P16S 모듈 | v2 | 10 | 조립중 | 버스바 용접 조건 변경
+팩 | + 모듈 BMS(BMU) | v2 | 30 | 입고 | 셀 전압 채널 확장
+팩 | + 냉각 플레이트 | v1 | 30 | 조립 |
+팩 | + 압축 패드 | v1 | 60 | 입고 |
+랙 | 8모듈 랙 | v1 | 4 | 출하 |
+랙 | 8모듈 랙 | v2 | 2 | 조립중 | 격벽 재질 변경
+랙 | + 랙 BMS(RMU) | v2 | 6 | 입고 |
+랙 | + 고전압 커넥터 | v1 | 12 | 조립 |
+랙 | + 소화 노즐 | v1 | 6 | 생산중 | 협력사 제작
+링크 | 4랙 뱅크 | v1 | 1 | 조립 |
+링크 | + 링크 BMS(SMU) | v1 | 2 | 입고 |
+링크 | + 파워 케이블 세트 | v1 | 2 | 조립 |
+
+[시험]
+# 시험명 | 대상 | 수량 | 일정 | 결과 | 비고
+셀 안전성(IEC 62619) | 셀 | 24 | 2026-03-05 | 합격 |
+셀 사이클 수명 | 셀 | 12 | 2026-03-20 | 진행중 | 3,000 사이클 목표
+모듈 진동·충격 | 팩 | 2 | 2026-04-02 | 합격 |
+모듈 열폭주 전이 | 팩 | 2 | 2026-04-15 | 불합격 | v1 격벽 관통
+랙 화재 전이(UL 9540A) | 랙 | 1 | 2026-05-08 | 진행중 |
+랙 성능(용량·효율) | 랙 | 2 | 2026-05-20 | 대기 |
+뱅크 계통 연계 | 링크 | 1 | 2026-06-10 | 대기 |
+
+[재활용]
+# 용도 | 출처 시험 | 수량 | 비고
+해체 분석용 | 모듈 열폭주 전이 | 2 | 격벽 단면 분석
+교육·훈련 교보재 | 모듈 진동·충격 | 1 | 조립 실습용
+사내 전시용 | 셀 안전성(IEC 62619) | 6 |
+후속 시험 재투입 | 랙 성능(용량·효율) | 2 | 계통 연계 시험으로 이관
+소재 회수 후 폐기 | 셀 사이클 수명 | 12 | 리튬·구리 회수
+`;
+
+/* ============================================================
+   파서 — 원본 줄 번호를 기억해서 표 편집이 그 줄만 고치게 한다
+   ============================================================ */
+function normalizeStage(raw){
+  const s = (raw || "").trim();
+  if(!s) return { index:-1, state:"idle" };
+  if(/^(대기|미착수|예정)$/.test(s)) return { index:-1, state:"idle" };
+  let state = "done";
+  let body = s.replace(/\s+/g, "");
+  if(/중$/.test(body)){ state = "wip"; body = body.slice(0, -1); }
+  body = body.replace(/(완료|끝|done)$/i, "");
+  const idx = STAGES.findIndex(st => st.ko === body || st.id === body.toLowerCase());
+  if(idx === -1) return null;
+  return { index:idx, state };
+}
+function stageLabel(index, state){
+  if(index < 0) return "대기";
+  return STAGES[index].ko + (state === "wip" ? "중" : "");
+}
+function normalizeLevel(raw){
+  const s = (raw || "").trim().toLowerCase();
+  const hit = LEVELS.find(l => l.alias.some(a => a.toLowerCase() === s));
+  return hit ? hit.id : null;
+}
+function normalizeVersion(raw){
+  const s = (raw || "").trim();
+  if(!s) return "v1";
+  const m = s.match(/v?\s*(\d+)/i);
+  return m ? "v" + m[1] : s;
+}
+function toInt(raw, fallback){
+  const s = String(raw ?? "").replace(/[^\d.-]/g, "");
+  const n = parseInt(s, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+function sectionOf(line){
+  const m = line.trim().match(/^\[(.+)\]$/);
+  if(!m) return null;
+  const name = m[1].trim().toLowerCase();
+  for(const s of Object.values(SECTIONS)){
+    if(s.alias.some(a => a.toLowerCase() === name)) return s.key;
+  }
+  return null;
+}
+
+function parse(text){
+  const lines = text.split("\n");
+  const model = { items:[], tests:[], reuses:[], errors:[] };
+  let section = "item";
+
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if(!line || line.startsWith("#")) return;
+
+    const sec = sectionOf(line);
+    if(sec){ section = sec; return; }
+    if(/^\[.+\]$/.test(line)){
+      model.errors.push({ line:i + 1, msg:`모르는 구역 이름입니다. [품목] · [시험] · [재활용] 중에서 골라 주세요.` });
+      return;
+    }
+
+    const f = line.split("|").map(s => s.trim());
+
+    if(section === "item"){
+      const level = normalizeLevel(f[0]);
+      if(!level){
+        model.errors.push({ line:i + 1, msg:`레벨 "${f[0] || "(빈칸)"}" 을 모릅니다. 셀 · 팩 · 랙 · 링크 중에서 골라 주세요.` });
+        return;
+      }
+      let name = (f[1] || "").trim();
+      if(!name){
+        model.errors.push({ line:i + 1, msg:"품목명이 비었습니다." });
+        return;
+      }
+      let kind = "main";
+      if(/^[+＋]/.test(name)){ kind = "addon"; name = name.replace(/^[+＋]\s*/, ""); }
+      const st = normalizeStage(f[4]);
+      if(st === null){
+        model.errors.push({ line:i + 1, msg:`단계 "${f[4]}" 를 모릅니다. 생산 · 입고 · 조립 · 출하 (뒤에 '중' 가능) 로 적어 주세요.` });
+        return;
+      }
+      model.items.push({
+        row:i, level, kind, name,
+        version: normalizeVersion(f[2]),
+        qty: toInt(f[3], 1),
+        stage: st.index, state: st.state,
+        note: f.slice(5).join(" | ").trim()
+      });
+      return;
+    }
+
+    if(section === "test"){
+      const name = (f[0] || "").trim();
+      if(!name){ model.errors.push({ line:i + 1, msg:"시험명이 비었습니다." }); return; }
+      const targetRaw = (f[1] || "").trim();
+      const level = normalizeLevel(targetRaw);
+      let result = (f[4] || "대기").trim().replace(/\s+/g, "");
+      if(!RESULTS.includes(result)){
+        model.errors.push({ line:i + 1, msg:`결과 "${result}" 를 모릅니다. 대기 · 진행중 · 합격 · 불합격 중에서 골라 주세요.` });
+        result = "대기";
+      }
+      model.tests.push({
+        row:i, name, targetRaw, level,
+        qty: toInt(f[2], 1),
+        date: (f[3] || "").trim(),
+        result,
+        note: f.slice(5).join(" | ").trim()
+      });
+      return;
+    }
+
+    const purpose = (f[0] || "").trim();
+    if(!purpose){ model.errors.push({ line:i + 1, msg:"재활용 용도가 비었습니다." }); return; }
+    model.reuses.push({
+      row:i, purpose,
+      from: (f[1] || "").trim(),
+      qty: toInt(f[2], 1),
+      note: f.slice(3).join(" | ").trim()
+    });
+  });
+
+  // 참조 검사 — 존재하지 않는 시험을 가리키는 재활용
+  const testNames = new Set(model.tests.map(t => t.name));
+  model.reuses.forEach(r => {
+    if(r.from && r.from !== "*" && !testNames.has(r.from)){
+      model.errors.push({ line:r.row + 1, msg:`"${r.from}" 이라는 시험이 [시험] 구역에 없습니다.` });
+    }
+  });
+  // 시험에 넣은 것보다 많이 재활용할 수는 없다
+  const perTest = new Map();
+  model.reuses.forEach(r => perTest.set(r.from, (perTest.get(r.from) || 0) + r.qty));
+  model.tests.forEach(t => {
+    const used = perTest.get(t.name) || 0;
+    if(used > t.qty){
+      model.errors.push({ line:t.row + 1, msg:`"${t.name}" 에 투입한 샘플은 ${t.qty}ea 인데 재활용에 ${used}ea 를 배정했습니다.` });
+    }
+  });
+
+  model.tests.forEach(t => {
+    if(t.targetRaw && !t.level){
+      const known = model.items.some(it => it.name === t.targetRaw);
+      if(!known) model.errors.push({ line:t.row + 1, msg:`시험 대상 "${t.targetRaw}" 이 레벨명도 품목명도 아닙니다.` });
+    }
+  });
+
+  return model;
+}
+
+/* 한 줄 만들기 ------------------------------------------------ */
+function formatItem(it){
+  return [
+    LEVEL_BY_ID[it.level].ko,
+    (it.kind === "addon" ? "+ " : "") + it.name,
+    it.version,
+    String(it.qty),
+    stageLabel(it.stage, it.state),
+    it.note || ""
+  ].join(" | ").replace(/\s*\|\s*$/, " |");
+}
+function formatTest(t){
+  return [t.name, t.targetRaw, String(t.qty), t.date, t.result, t.note || ""]
+    .join(" | ").replace(/\s*\|\s*$/, " |");
+}
+function formatReuse(r){
+  return [r.purpose, r.from, String(r.qty), r.note || ""]
+    .join(" | ").replace(/\s*\|\s*$/, " |");
+}
+
+/* 구역 끝에 줄 붙이기 — 사용자가 쓴 주석/빈 줄은 건드리지 않는다 */
+function appendToSection(text, key, newLine){
+  const head = SECTIONS[key].head;
+  const lines = text.split("\n");
+  let start = -1;
+  for(let i = 0; i < lines.length; i++){
+    if(sectionOf(lines[i]) === key){ start = i; break; }
+  }
+  if(start === -1){
+    const tail = text.replace(/\s*$/, "");
+    return (tail ? tail + "\n\n" : "") + head + "\n" + newLine + "\n";
+  }
+  let end = lines.length;
+  for(let i = start + 1; i < lines.length; i++){
+    if(sectionOf(lines[i])){ end = i; break; }
+  }
+  let insert = end;
+  while(insert > start + 1 && lines[insert - 1].trim() === "") insert--;
+  lines.splice(insert, 0, newLine);
+  return lines.join("\n");
+}
+function replaceLine(text, row, newLine){
+  const lines = text.split("\n");
+  if(row < 0 || row >= lines.length) return text;
+  lines[row] = newLine;
+  return lines.join("\n");
+}
+function removeLine(text, row){
+  const lines = text.split("\n");
+  if(row < 0 || row >= lines.length) return text;
+  lines.splice(row, 1);
+  return lines.join("\n");
+}
+
+/* ============================================================
+   상태
+   ============================================================ */
+const STORAGE_KEY = "sample-flow-board:v1";
+const THEME_KEY = "sample-flow-board:theme";
+const $ = sel => document.querySelector(sel);
+const dsl = $("#dsl");
+let model = { items:[], tests:[], reuses:[], errors:[] };
+
+function setText(next, opts){
+  dsl.value = next;
+  try{ localStorage.setItem(STORAGE_KEY, next); }catch(e){}
+  if(!opts || !opts.keepScroll) dsl.scrollTop = dsl.scrollHeight;
+  render();
+}
+
+/* ============================================================
+   그리기 도우미
+   ============================================================ */
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+function tokens(){
+  const cs = getComputedStyle(document.documentElement);
+  const grab = n => cs.getPropertyValue(n).trim();
+  return {
+    ink: grab("--ink"), ink2: grab("--ink-2"), muted: grab("--muted"), idle: grab("--idle"),
+    line: grab("--line"), line2: grab("--line-2"),
+    surface: grab("--surface"), surface2: grab("--surface-2"), surface3: grab("--surface-3"),
+    accent: grab("--accent"), ok: grab("--ok"), warn: grab("--warn"), crit: grab("--crit"),
+    test: grab("--test"), reuse: grab("--reuse"),
+    lv: Object.fromEntries(LEVELS.map(l => [l.id, grab(l.token)])),
+    band: grab("--band"), chip: grab("--chip-bg")
+  };
+}
+const FONT = '"Pretendard","Apple SD Gothic Neo","Noto Sans KR",ui-sans-serif,-apple-system,"Segoe UI",sans-serif';
+const MONO = 'ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,monospace';
+
+function clip(s, max){
+  s = String(s ?? "");
+  return s.length > max ? s.slice(0, max - 1) + "…" : s;
+}
+/* 한글은 전각이라 글자 수로 자르면 폭이 안 맞는다 — 실제 폭으로 잰다 */
+function charW(ch, f){
+  const c = ch.codePointAt(0);
+  const wide =
+    (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
+    (c >= 0xAC00 && c <= 0xD7A3) || (c >= 0xF900 && c <= 0xFAFF) ||
+    (c >= 0xFF00 && c <= 0xFF60) || (c >= 0xFFE0 && c <= 0xFFE6);
+  return wide ? f : f * 0.55;
+}
+function textW(s, f){
+  let w = 0;
+  for(const ch of String(s ?? "")) w += charW(ch, f);
+  return w;
+}
+function clipW(s, maxPx, f){
+  s = String(s ?? "");
+  if(textW(s, f) <= maxPx) return s;
+  const ell = charW("…", f);
+  let out = "", w = 0;
+  for(const ch of s){
+    const cw = charW(ch, f);
+    if(w + cw + ell > maxPx) break;
+    out += ch; w += cw;
+  }
+  return out + "…";
+}
+function emptyState(title, body){
+  return `<div class="empty"><h3>${esc(title)}</h3><p>${esc(body)}</p></div>`;
+}
+
+/* ============================================================
+   1) 공정 플로우 — 레인 = 레벨, 트랙 = 품목, 정거장 = 단계
+   ============================================================ */
+function renderFlow(){
+  const host = $("#canvas-flow");
+  if(!model.items.length){
+    host.innerHTML = emptyState("아직 품목이 없습니다",
+      "왼쪽 텍스트 탭에서 «예시 데이터» 를 눌러 보거나, 한 줄 추가 탭에서 품목을 넣어 보세요.");
+    return;
+  }
+  const T = tokens();
+
+  const PAD = 16, LABEL_W = 272, COL_W = 128, TEST_W = 108;
+  const HEAD_H = 52, ROW_H = 29, LANE_HEAD_H = 27, LANE_GAP = 38;
+  const x0 = PAD + LABEL_W;
+  const colX = i => x0 + COL_W * (i + 0.5);
+  const testX = x0 + COL_W * STAGES.length + TEST_W / 2;
+  const W = x0 + COL_W * STAGES.length + TEST_W + PAD;
+
+  const lanes = LEVELS
+    .map(l => ({
+      ...l,
+      rows: model.items.filter(it => it.level === l.id).sort((a, b) =>
+        (a.kind === b.kind ? 0 : a.kind === "main" ? -1 : 1) ||
+        a.name.localeCompare(b.name, "ko") ||
+        a.version.localeCompare(b.version))
+    }))
+    .filter(l => l.rows.length);
+
+  // 시험은 보통 레벨 단위(랙 1대)라 레인 머리에 한 번만, 품목을 콕 집은 시험만 그 줄에 붙인다
+  const laneTests = id => model.tests.filter(t => t.level === id);
+  const namedTests = it => it.kind !== "main" ? []
+    : model.tests.filter(t => !t.level && t.targetRaw === it.name);
+  const testChip = (y, list) => {
+    const q = list.reduce((s, t) => s + t.qty, 0);
+    const parts = [];
+    parts.push(`<line x1="${colX(3) + 12}" y1="${y}" x2="${testX - 30}" y2="${y}" stroke="${T.test}" stroke-width="1.4" stroke-dasharray="3 3" opacity=".6" marker-end="url(#ah-t)"/>`);
+    parts.push(`<rect x="${testX - 28}" y="${y - 8.5}" width="60" height="17" rx="8.5" fill="${T.surface}" stroke="${T.test}" stroke-width="1.2" opacity=".9"/>`);
+    parts.push(`<text x="${testX + 2}" y="${y + 3.5}" text-anchor="middle" font-size="10" font-weight="650" fill="${T.test}">${list.length}종 ${q}ea</text>`);
+    return parts.join("");
+  };
+
+  // 세로 좌표 계산
+  let y = HEAD_H;
+  const laneBox = [];
+  lanes.forEach((lane, li) => {
+    const top = y;
+    y += LANE_HEAD_H;
+    lane.rows.forEach(r => { r._y = y + ROW_H / 2; y += ROW_H; });
+    laneBox.push({ lane, top, bottom: y });
+    if(li < lanes.length - 1) y += LANE_GAP;
+  });
+  const H = y + 14;
+
+  const p = [];
+  p.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="레벨별 공정 진행 플로우" font-family='${FONT}'>`);
+  p.push(`<defs>
+    <marker id="ah" viewBox="0 0 8 8" refX="6.5" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0.6 L7.5 4 L0 7.4 z" fill="${T.line2}"/>
+    </marker>
+    <marker id="ah-a" viewBox="0 0 8 8" refX="6.5" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M0 0.6 L7.5 4 L0 7.4 z" fill="${T.accent}"/>
+    </marker>
+    <marker id="ah-t" viewBox="0 0 8 8" refX="6.5" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M0 0.6 L7.5 4 L0 7.4 z" fill="${T.test}"/>
+    </marker>
+  </defs>`);
+  p.push(`<rect width="${W}" height="${H}" fill="${T.surface}"/>`);
+
+  // 단계 컬럼 띠 + 머리글
+  STAGES.forEach((st, i) => {
+    const cx = colX(i), left = x0 + COL_W * i;
+    if(i % 2 === 0) p.push(`<rect x="${left}" y="${HEAD_H - 12}" width="${COL_W}" height="${H - HEAD_H + 4}" fill="${T.band}"/>`);
+    const reached = model.items.filter(it => it.stage >= i).length;
+    p.push(`<text x="${cx}" y="22" text-anchor="middle" font-size="12.5" font-weight="650" fill="${T.ink}">${esc(st.ko)}</text>`);
+    p.push(`<text x="${cx}" y="37" text-anchor="middle" font-size="10.5" fill="${T.muted}">${st.desc} · ${reached}건</text>`);
+  });
+  p.push(`<text x="${testX}" y="22" text-anchor="middle" font-size="12.5" font-weight="650" fill="${T.test}">시험 투입</text>`);
+  p.push(`<text x="${testX}" y="37" text-anchor="middle" font-size="10.5" fill="${T.muted}">${model.tests.length}개 항목</text>`);
+  p.push(`<line x1="${PAD}" y1="${HEAD_H - 12}" x2="${W - PAD}" y2="${HEAD_H - 12}" stroke="${T.line}" stroke-width="1"/>`);
+
+  // 레인
+  laneBox.forEach(({ lane, top, bottom }, li) => {
+    const c = T.lv[lane.id];
+    const mains = lane.rows.filter(r => r.kind === "main");
+    const addons = lane.rows.filter(r => r.kind === "addon");
+    const total = lane.rows.reduce((s, r) => s + r.qty, 0);
+
+    p.push(`<rect x="${PAD}" y="${top + 4}" width="3" height="${bottom - top - 6}" rx="1.5" fill="${c}"/>`);
+    p.push(`<text x="${PAD + 12}" y="${top + 17}" font-size="13" font-weight="680" fill="${c}">${esc(lane.ko)}</text>`);
+    p.push(`<text x="${PAD + 12 + textW(lane.ko, 13) + 9}" y="${top + 17}" font-size="10.5" fill="${T.muted}">본품 ${mains.length} · 추가 ${addons.length} · 합계 ${total.toLocaleString("ko-KR")}ea</text>`);
+
+    // 이 레벨의 조립 샘플이 들어가는 시험
+    const lt = laneTests(lane.id);
+    if(lt.length) p.push(testChip(top + 13, lt));
+
+    lane.rows.forEach(r => {
+      const cy = r._y;
+      const indent = r.kind === "addon" ? 20 : 8;
+      const isAddon = r.kind === "addon";
+
+      // 이름 · 버전 · 수량
+      const vx = PAD + LABEL_W - 84;
+      const nameX = PAD + indent;
+      const label = (isAddon ? "└ " : "") + r.name;
+      p.push(`<text x="${nameX}" y="${cy + 4}" font-size="12" fill="${isAddon ? T.ink2 : T.ink}" font-weight="${isAddon ? 400 : 550}">${esc(clipW(label, vx - 9 - nameX, 12))}</text>`);
+      const vw = textW(r.version, 10) + 11;
+      const vHot = r.version !== "v1";
+      p.push(`<rect x="${vx}" y="${cy - 8}" width="${vw}" height="15" rx="7.5" fill="${vHot ? T.accent : "none"}" stroke="${vHot ? "none" : T.line2}"/>`);
+      p.push(`<text x="${vx + vw / 2}" y="${cy + 3.5}" text-anchor="middle" font-size="10" font-weight="700" fill="${vHot ? T.surface : T.muted}" font-family='${MONO}'>${esc(r.version)}</text>`);
+      p.push(`<text x="${PAD + LABEL_W - 14}" y="${cy + 4}" text-anchor="end" font-size="11.5" fill="${T.muted}" font-family='${MONO}'>${r.qty.toLocaleString("ko-KR")}</text>`);
+
+      // 트랙
+      const a = colX(0), b = colX(STAGES.length - 1);
+      p.push(`<line x1="${a}" y1="${cy}" x2="${b}" y2="${cy}" stroke="${T.line}" stroke-width="${isAddon ? 1.5 : 2}" ${isAddon ? 'stroke-dasharray="3 3"' : ""} stroke-linecap="round"/>`);
+      if(r.stage >= 0){
+        const end = colX(Math.max(0, r.stage));
+        if(r.stage > 0 || r.state === "done"){
+          p.push(`<line x1="${a}" y1="${cy}" x2="${end}" y2="${cy}" stroke="${c}" stroke-width="${isAddon ? 2 : 3}" stroke-linecap="round" opacity="${r.state === "wip" ? .55 : 1}"/>`);
+        }
+      }
+      // 정거장
+      STAGES.forEach((_, i) => {
+        const cx = colX(i), rad = isAddon ? 4 : 5.2;
+        if(r.stage > i || (r.stage === i && r.state === "done")){
+          p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${c}"/>`);
+        }else if(r.stage === i){
+          p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${T.surface}" stroke="${T.warn}" stroke-width="2.2"/>`);
+          p.push(`<circle cx="${cx}" cy="${cy}" r="1.7" fill="${T.warn}"/>`);
+        }else{
+          p.push(`<circle cx="${cx}" cy="${cy}" r="${rad - 1.2}" fill="${T.surface}" stroke="${T.line2}" stroke-width="1.5"/>`);
+        }
+      });
+
+      // 이 품목만 콕 집은 시험이 있으면 그 줄에 붙인다
+      const named = namedTests(r);
+      if(named.length) p.push(testChip(cy, named));
+
+      const tip = `${LEVEL_BY_ID[r.level].ko} · ${r.kind === "addon" ? "추가구성품" : "본품"} · ${r.name} ${r.version} · ${r.qty}ea · ${stageLabel(r.stage, r.state)}${r.note ? " · " + r.note : ""}`;
+      p.push(`<rect x="${PAD}" y="${cy - ROW_H / 2}" width="${W - PAD * 2}" height="${ROW_H}" fill="transparent"><title>${esc(tip)}</title></rect>`);
+    });
+
+    // 상위 레벨로 넘어가는 화살표 — 레인 사이 빈 구간에만 그린다
+    if(li < laneBox.length - 1){
+      const next = laneBox[li + 1];
+      const ax = colX(2);
+      p.push(`<path d="M${ax} ${bottom + 8} L${ax} ${next.top - 4}" stroke="${T.accent}" stroke-width="1.6" fill="none" marker-end="url(#ah-a)" opacity=".8"/>`);
+      p.push(`<text x="${ax + 10}" y="${(bottom + 8 + next.top) / 2 + 3}" font-size="10.5" font-weight="600" fill="${T.accent}">${esc(lane.ko)} → ${esc(next.lane.ko)} 조립 투입</text>`);
+    }
+  });
+
+  p.push("</svg>");
+  host.innerHTML = p.join("");
+}
+
+/* ============================================================
+   2) 시험 · 재활용 — 조립 샘플 → 시험 → 재활용 용도
+   ============================================================ */
+function renderSankey(){
+  const host = $("#canvas-sankey");
+  if(!model.tests.length){
+    host.innerHTML = emptyState("등록된 시험이 없습니다",
+      "[시험] 구역에 «시험명 | 대상 | 수량 | 일정 | 결과» 형태로 적으면 조립 샘플이 어디로 흘러가는지 그립니다.");
+    return;
+  }
+  const T = tokens();
+
+  // 좌: 레벨(또는 품목) / 중: 시험 / 우: 재활용 용도
+  const srcMap = new Map();
+  model.tests.forEach(t => {
+    const key = t.level || t.targetRaw || "미지정";
+    const label = t.level ? LEVEL_BY_ID[t.level].ko + " 조립 샘플" : (t.targetRaw || "미지정");
+    const cur = srcMap.get(key) || { key, label, value:0, color: t.level ? T.lv[t.level] : T.idle, out:0 };
+    cur.value += t.qty;
+    srcMap.set(key, cur);
+  });
+  const src = [...srcMap.values()];
+
+  const mid = model.tests.map(t => ({
+    key:t.name, label:t.name, value:t.qty, result:t.result, date:t.date,
+    srcKey: t.level || t.targetRaw || "미지정", inOff:0, outOff:0
+  }));
+
+  const dstMap = new Map();
+  const links2 = [];
+  model.reuses.forEach(r => {
+    const test = mid.find(m => m.key === r.from);
+    if(!test) return; // 어느 시험에서 나온 샘플인지 모르면 흐름을 그릴 수 없다 — 오류 목록에서 알려 준다
+    const cur = dstMap.get(r.purpose) || { key:r.purpose, label:r.purpose, value:0, color:T.reuse, inOff:0 };
+    cur.value += r.qty;
+    dstMap.set(r.purpose, cur);
+    links2.push({ from:test, toKey:r.purpose, value:r.qty });
+  });
+  // 시험 수량 중 아직 용도가 정해지지 않은 몫
+  mid.forEach(m => {
+    const used = links2.filter(l => l.from === m).reduce((s, l) => s + l.value, 0);
+    const rest = m.value - used;
+    if(rest > 0){
+      const cur = dstMap.get("용도 미정 · 보관") || { key:"용도 미정 · 보관", label:"용도 미정 · 보관", value:0, color:T.idle, inOff:0 };
+      cur.value += rest;
+      dstMap.set("용도 미정 · 보관", cur);
+      links2.push({ from:m, toKey:"용도 미정 · 보관", value:rest, muted:true });
+    }
+  });
+  const dst = [...dstMap.values()].sort((a, b) => (a.key === "용도 미정 · 보관" ? 1 : b.key === "용도 미정 · 보관" ? -1 : b.value - a.value));
+
+  const PADT = 54, PADB = 24, GAP = 16, NODE_W = 13;
+  const totalMid = mid.reduce((s, n) => s + n.value, 0);
+  const totalDst = dst.reduce((s, n) => s + n.value, 0);
+  const colMax = Math.max(1, totalMid, totalDst);
+  const bodyH = Math.max(260, colMax * 5.4);
+  const scale = bodyH / colMax;
+  const W = 940;
+  const X = { src:210, mid:452, dst:706 };
+
+  // 수량이 적은 마디는 띠는 얇게 두되 자리는 넉넉히 잡는다 — 안 그러면 이름표끼리 겹친다
+  const stack = (nodes, x, minPitch) => {
+    let cy = PADT;
+    nodes.forEach(n => {
+      n.h = Math.max(7, n.value * scale);
+      n.x = x; n.y = cy;
+      cy += Math.max(n.h, minPitch) + GAP;
+    });
+    return cy - GAP;
+  };
+  const H = Math.max(
+    stack(src, X.src, 36),
+    stack(mid, X.mid, 42),
+    stack(dst, X.dst, 36)
+  ) + PADB;
+  links2.sort((a, b) => a.from.y - b.from.y); // 띠가 덜 꼬이도록 위에서부터
+
+  const ribbon = (x1, y1, x2, y2, t, fill, op) => {
+    const mx = (x1 + x2) / 2;
+    return `<path d="M${x1} ${y1} C${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2} L${x2} ${y2 + t} C${mx} ${y2 + t}, ${mx} ${y1 + t}, ${x1} ${y1 + t} Z" fill="${fill}" opacity="${op}"/>`;
+  };
+
+  const p = [];
+  p.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="시험 투입과 시험 후 재활용 흐름" font-family='${FONT}'>`);
+  p.push(`<rect width="${W}" height="${H}" fill="${T.surface}"/>`);
+  p.push(`<text x="${X.src}" y="24" text-anchor="end" font-size="12.5" font-weight="650" fill="${T.ink}">조립 완료 샘플</text>`);
+  p.push(`<text x="${X.src}" y="39" text-anchor="end" font-size="10.5" fill="${T.muted}">시험동 반출 기준</text>`);
+  p.push(`<text x="${X.mid + NODE_W / 2}" y="24" text-anchor="middle" font-size="12.5" font-weight="650" fill="${T.test}">시험 항목</text>`);
+  p.push(`<text x="${X.mid + NODE_W / 2}" y="39" text-anchor="middle" font-size="10.5" fill="${T.muted}">${model.tests.length}건</text>`);
+  p.push(`<text x="${X.dst}" y="24" font-size="12.5" font-weight="650" fill="${T.reuse}">시험 후 재활용</text>`);
+  p.push(`<text x="${X.dst}" y="39" font-size="10.5" fill="${T.muted}">${dst.length}개 용도</text>`);
+
+  // 띠 — 좌→중
+  mid.forEach(m => {
+    const s = src.find(n => n.key === m.srcKey);
+    if(!s) return;
+    const t = m.h;
+    p.push(ribbon(s.x + NODE_W, s.y + s.out, m.x, m.y + m.inOff, t, s.color, .3));
+    s.out += t; m.inOff += t;
+  });
+  // 띠 — 중→우
+  links2.forEach(l => {
+    const d = dst.find(n => n.key === l.toKey);
+    if(!d) return;
+    const t = Math.max(4, l.value * scale);
+    p.push(ribbon(l.from.x + NODE_W, l.from.y + l.from.outOff, d.x, d.y + d.inOff, t, l.muted ? T.idle : T.reuse, l.muted ? .22 : .34));
+    l.from.outOff += t; d.inOff += t;
+  });
+
+  const node = (n, fill) =>
+    `<rect x="${n.x}" y="${n.y}" width="${NODE_W}" height="${n.h}" rx="3" fill="${fill}"/>`;
+
+  src.forEach(n => {
+    p.push(node(n, n.color));
+    p.push(`<text x="${n.x - 10}" y="${n.y + n.h / 2 - 1}" text-anchor="end" font-size="12" font-weight="600" fill="${T.ink}">${esc(clipW(n.label, X.src - 22, 12))}</text>`);
+    p.push(`<text x="${n.x - 10}" y="${n.y + n.h / 2 + 12}" text-anchor="end" font-size="10.5" fill="${T.muted}" font-family='${MONO}'>${n.value}ea 투입</text>`);
+  });
+
+  const resultColor = r => r === "합격" ? T.ok : r === "불합격" ? T.crit : r === "진행중" ? T.warn : T.idle;
+  mid.forEach(n => {
+    p.push(node(n, T.test));
+    const ly = n.y + n.h / 2;
+    const label = clipW(n.label, X.dst - X.mid - 42, 11.5);
+    const meta = `${n.result} · ${n.value}ea${n.date ? " · " + n.date : ""}`;
+    const wpx = Math.max(textW(label, 11.5), textW(meta, 10.5) + 12) + 16;
+    // 이름표는 띠 위에 얹히므로 두 줄을 한 판으로 덮어 준다
+    p.push(`<rect x="${n.x + NODE_W + 7}" y="${ly - 19}" width="${wpx}" height="33" rx="5" fill="${T.chip}"/>`);
+    p.push(`<text x="${n.x + NODE_W + 14}" y="${ly - 6}" font-size="11.5" font-weight="600" fill="${T.ink}">${esc(label)}</text>`);
+    p.push(`<circle cx="${n.x + NODE_W + 18}" cy="${ly + 6}" r="3.4" fill="${resultColor(n.result)}"/>`);
+    p.push(`<text x="${n.x + NODE_W + 26}" y="${ly + 10}" font-size="10.5" fill="${T.muted}" font-family='${MONO}'>${esc(meta)}</text>`);
+    p.push(`<rect x="${n.x}" y="${n.y}" width="${NODE_W}" height="${n.h}" fill="transparent"><title>${esc(n.label + " · " + n.value + "ea · " + n.result + (n.date ? " · " + n.date : ""))}</title></rect>`);
+  });
+
+  dst.forEach(n => {
+    p.push(node(n, n.color));
+    p.push(`<text x="${n.x + NODE_W + 10}" y="${n.y + n.h / 2 - 1}" font-size="12" font-weight="600" fill="${T.ink}">${esc(clipW(n.label, W - (n.x + NODE_W + 10) - 14, 12))}</text>`);
+    p.push(`<text x="${n.x + NODE_W + 10}" y="${n.y + n.h / 2 + 12}" font-size="10.5" fill="${T.muted}" font-family='${MONO}'>${n.value}ea</text>`);
+  });
+
+  p.push("</svg>");
+  host.innerHTML = p.join("");
+}
+
+/* ============================================================
+   3) 구성 트리 — 링크가 랙을, 랙이 팩을, 팩이 셀을 품는다
+   ============================================================ */
+function renderTree(){
+  const host = $("#canvas-tree");
+  if(!model.items.length){
+    host.innerHTML = emptyState("구성이 비어 있습니다", "품목을 넣으면 레벨이 서로를 어떻게 품는지 보여 줍니다.");
+    return;
+  }
+  const order = [...LEVELS].reverse().filter(l => model.items.some(i => i.level === l.id));
+  const stagePill = it => {
+    const cls = it.stage < 0 ? "st-idle" : it.state === "wip" ? "st-wip" : "st-done";
+    return `<span class="pill ${cls}">${esc(stageLabel(it.stage, it.state))}</span>`;
+  };
+  const partRow = it => `
+    <div class="part ${it.kind === "addon" ? "addon" : ""}" title="${esc(it.note || it.name)}">
+      <span class="p-name">${esc(it.name)}</span>
+      <span class="pill v ${it.version !== "v1" ? "v-imp" : ""}" title="${it.version !== "v1" ? "개선품" : "초도품"}">${esc(it.version)}</span>
+      <span class="p-qty">${it.qty.toLocaleString("ko-KR")}ea</span>
+      ${stagePill(it)}
+    </div>`;
+
+  const build = i => {
+    if(i >= order.length) return "";
+    const lv = order[i];
+    const rows = model.items.filter(it => it.level === lv.id);
+    const mains = rows.filter(r => r.kind === "main");
+    const addons = rows.filter(r => r.kind === "addon");
+    const total = rows.reduce((s, r) => s + r.qty, 0);
+    return `
+      <div class="rung ${i === 0 ? "top" : ""}">
+        <div class="rung-head">
+          <span class="rung-dot" style="background:var(${lv.token})"></span>
+          <span class="rung-name" style="color:var(${lv.token})">${esc(lv.ko)}</span>
+          <span class="rung-meta">${rows.length}품목 · ${total.toLocaleString("ko-KR")}ea</span>
+        </div>
+        ${mains.length ? `<div class="subhead">본품</div><div class="parts">${mains.map(partRow).join("")}</div>` : ""}
+        ${addons.length ? `<div class="subhead">추가구성품</div><div class="parts">${addons.map(partRow).join("")}</div>` : ""}
+        ${build(i + 1)}
+      </div>`;
+  };
+  host.innerHTML = `<div class="tree">${build(0)}</div>`;
+}
+
+/* ============================================================
+   KPI
+   ============================================================ */
+function renderKpis(){
+  const host = $("#kpis");
+  const items = model.items;
+  const totalQty = items.reduce((s, i) => s + i.qty, 0);
+  // 추가구성품은 조립되며 흡수되니 출하율은 본품만 센다
+  const mainItems = items.filter(i => i.kind === "main");
+  const shipped = mainItems.filter(i => i.stage === 3 && i.state === "done").length;
+  const rate = mainItems.length ? Math.round(shipped / mainItems.length * 100) : 0;
+  const improved = items.filter(i => i.version !== "v1");
+  const impQty = improved.reduce((s, i) => s + i.qty, 0);
+  const impRate = totalQty ? Math.round(impQty / totalQty * 100) : 0;
+  const done = model.tests.filter(t => t.result === "합격" || t.result === "불합격");
+  const pass = model.tests.filter(t => t.result === "합격").length;
+  const testQty = model.tests.reduce((s, t) => s + t.qty, 0);
+  const reuseQty = model.reuses.reduce((s, r) => s + r.qty, 0);
+  const reuseRate = testQty ? Math.round(reuseQty / testQty * 100) : 0;
+
+  const buckets = STAGES.map((_, i) => items.filter(it => it.stage === i).length);
+  const idle = items.filter(it => it.stage < 0).length;
+  const segTotal = Math.max(1, items.length);
+  // 단계가 진행될수록 액센트가 진해진다 — 레벨 색과 헷갈리지 않게 한 계열만 쓴다
+  const meter = [
+    ...buckets.map((n, i) => ({ n, c:`color-mix(in srgb, var(--accent) ${28 + i * 24}%, var(--surface-3))` })),
+    { n:idle, c:"var(--line-2)" }
+  ].filter(s => s.n > 0)
+   .map((s, i, arr) => `<span style="width:${(s.n / segTotal * 100).toFixed(2)}%;background:${s.c}" title=""></span>`).join("");
+
+  const card = (label, value, unit, sub, extra) => `
+    <div class="kpi">
+      <div class="k-label">${esc(label)}</div>
+      <div class="k-value">${esc(value)}${unit ? `<small>${esc(unit)}</small>` : ""}</div>
+      <div class="k-sub">${sub}</div>
+      ${extra || ""}
+    </div>`;
+
+  host.innerHTML = [
+    card("등록 품목", items.length, "종", `본품 ${mainItems.length} · 추가 ${items.length - mainItems.length}`,
+      `<div class="meter">${meter}</div>`),
+    card("총 수량", totalQty.toLocaleString("ko-KR"), "ea", `레벨 ${new Set(items.map(i => i.level)).size}개 구간`),
+    card("본품 출하", rate, "%", `${shipped} / ${mainItems.length} 본품`),
+    card("개선품 비중", impRate, "%", `v2 이상 ${improved.length}종 · ${impQty.toLocaleString("ko-KR")}ea`),
+    card("시험", model.tests.length, "건", `판정 완료 ${done.length} · 합격 ${pass}`),
+    card("재활용 확정", reuseRate, "%", `${reuseQty} / ${testQty}ea · ${new Set(model.reuses.map(r => r.purpose)).size}개 용도`)
+  ].join("");
+}
+
+/* ============================================================
+   오류 · 표 편집
+   ============================================================ */
+function renderErrors(){
+  const host = $("#errors");
+  if(!model.errors.length){ host.innerHTML = ""; return; }
+  host.innerHTML = model.errors
+    .slice(0, 8)
+    .map(e => `<div class="err"><b>${e.line}줄</b><span>${esc(e.msg)}</span></div>`)
+    .join("") + (model.errors.length > 8
+      ? `<div class="err"><b>+</b><span>그 밖에 ${model.errors.length - 8}건이 더 있습니다.</span></div>` : "");
+}
+
+function renderTable(){
+  const t = $("#edit-table");
+  const stageOptions = ["대기", ...STAGES.flatMap(s => [s.ko + "중", s.ko])];
+  const rows = [];
+
+  rows.push(`<thead><tr>
+    <th style="width:60px">레벨</th><th style="width:68px">구분</th><th style="width:auto">품목명</th>
+    <th style="width:52px">버전</th><th style="width:62px">수량</th><th style="width:86px">단계</th><th style="width:32px"><span class="sr-only">삭제</span></th>
+  </tr></thead><tbody>`);
+
+  if(model.items.length){
+    rows.push(`<tr class="sect-row"><td colspan="7">품목 ${model.items.length}</td></tr>`);
+    model.items.forEach(it => {
+      rows.push(`<tr data-row="${it.row}" data-type="item">
+        <td><select data-f="level">${LEVELS.map(l => `<option value="${l.id}" ${l.id === it.level ? "selected" : ""}>${l.ko}</option>`).join("")}</select></td>
+        <td><select data-f="kind"><option value="main" ${it.kind === "main" ? "selected" : ""}>본품</option><option value="addon" ${it.kind === "addon" ? "selected" : ""}>추가</option></select></td>
+        <td><input data-f="name" value="${esc(it.name)}"></td>
+        <td><input data-f="version" value="${esc(it.version)}" class="mono"></td>
+        <td class="num"><input data-f="qty" type="number" min="1" value="${it.qty}"></td>
+        <td><select data-f="stage">${stageOptions.map(o => `<option ${o === stageLabel(it.stage, it.state) ? "selected" : ""}>${o}</option>`).join("")}</select></td>
+        <td><button class="row-del" type="button" title="이 줄 삭제" aria-label="${esc(it.name)} 삭제">×</button></td>
+      </tr>`);
+    });
+  }
+
+  if(model.tests.length){
+    rows.push(`<tr class="sect-row"><td colspan="7">시험 ${model.tests.length}</td></tr>`);
+    model.tests.forEach(t2 => {
+      rows.push(`<tr data-row="${t2.row}" data-type="test">
+        <td colspan="2"><select data-f="targetRaw">${LEVELS.map(l => `<option value="${l.ko}" ${l.id === t2.level ? "selected" : ""}>${l.ko}</option>`).join("")}${t2.level ? "" : `<option value="${esc(t2.targetRaw)}" selected>${esc(clip(t2.targetRaw, 8))}</option>`}</select></td>
+        <td><input data-f="name" value="${esc(t2.name)}"></td>
+        <td><input data-f="date" value="${esc(t2.date)}" class="mono" placeholder="YYYY-MM-DD"></td>
+        <td class="num"><input data-f="qty" type="number" min="1" value="${t2.qty}"></td>
+        <td><select data-f="result">${RESULTS.map(r => `<option ${r === t2.result ? "selected" : ""}>${r}</option>`).join("")}</select></td>
+        <td><button class="row-del" type="button" title="이 줄 삭제" aria-label="${esc(t2.name)} 삭제">×</button></td>
+      </tr>`);
+    });
+  }
+
+  if(model.reuses.length){
+    rows.push(`<tr class="sect-row"><td colspan="7">재활용 ${model.reuses.length}</td></tr>`);
+    model.reuses.forEach(r => {
+      rows.push(`<tr data-row="${r.row}" data-type="reuse">
+        <td colspan="2"><select data-f="from"><option value="">(출처 없음)</option>${model.tests.map(t3 => `<option value="${esc(t3.name)}" ${t3.name === r.from ? "selected" : ""}>${esc(clip(t3.name, 10))}</option>`).join("")}</select></td>
+        <td colspan="2"><input data-f="purpose" value="${esc(r.purpose)}"></td>
+        <td class="num"><input data-f="qty" type="number" min="1" value="${r.qty}"></td>
+        <td><input data-f="note" value="${esc(r.note)}" placeholder="비고"></td>
+        <td><button class="row-del" type="button" title="이 줄 삭제" aria-label="${esc(r.purpose)} 삭제">×</button></td>
+      </tr>`);
+    });
+  }
+
+  if(!model.items.length && !model.tests.length && !model.reuses.length){
+    rows.push(`<tr><td colspan="7" style="padding:26px;text-align:center;color:var(--muted)">아직 내용이 없습니다.</td></tr>`);
+  }
+  rows.push("</tbody>");
+  t.innerHTML = rows.join("");
+}
+
+/* 표에서 고친 값을 원본 텍스트의 그 줄에만 반영 */
+function commitRow(tr){
+  const row = Number(tr.dataset.row);
+  const type = tr.dataset.type;
+  const val = f => {
+    const el = tr.querySelector(`[data-f="${f}"]`);
+    return el ? el.value.trim() : "";
+  };
+  let line;
+  if(type === "item"){
+    const st = normalizeStage(val("stage")) || { index:-1, state:"idle" };
+    line = formatItem({
+      level: val("level"), kind: val("kind"), name: val("name") || "이름 없음",
+      version: normalizeVersion(val("version")), qty: toInt(val("qty"), 1),
+      stage: st.index, state: st.state,
+      note: (model.items.find(i => i.row === row) || {}).note || ""
+    });
+  }else if(type === "test"){
+    line = formatTest({
+      name: val("name") || "이름 없음", targetRaw: val("targetRaw"),
+      qty: toInt(val("qty"), 1), date: val("date"), result: val("result"),
+      note: (model.tests.find(i => i.row === row) || {}).note || ""
+    });
+  }else{
+    line = formatReuse({
+      purpose: val("purpose") || "용도 미정", from: val("from"),
+      qty: toInt(val("qty"), 1), note: val("note")
+    });
+  }
+  setText(replaceLine(dsl.value, row, line), { keepScroll:true });
+}
+
+/* ============================================================
+   렌더 진입점
+   ============================================================ */
+let activeView = "flow";
+function render(){
+  model = parse(dsl.value);
+  renderErrors();
+  renderKpis();
+  renderFlow();
+  renderSankey();
+  renderTree();
+  renderTable();
+  refreshSelects();
+}
+
+function refreshSelects(){
+  const tgt = $("#qt-target");
+  const keep = tgt.value;
+  tgt.innerHTML = LEVELS.map(l => `<option value="${l.ko}">${l.ko} 조립 샘플</option>`).join("")
+    + model.items.filter(i => i.kind === "main")
+        .map(i => `<option value="${esc(i.name)}">${esc(clip(i.name, 18))}</option>`).join("");
+  if(keep) tgt.value = keep;
+
+  const from = $("#qr-from");
+  const keep2 = from.value;
+  from.innerHTML = model.tests.length
+    ? model.tests.map(t => `<option value="${esc(t.name)}">${esc(clip(t.name, 22))}</option>`).join("")
+    : `<option value="">(먼저 시험을 등록하세요)</option>`;
+  if(keep2) from.value = keep2;
+}
+
+/* ============================================================
+   탭
+   ============================================================ */
+function wireTabs(listSel, onChange){
+  const tabs = [...document.querySelectorAll(`${listSel} .tab`)];
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => {
+        const on = t === tab;
+        t.setAttribute("aria-selected", String(on));
+        document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+      });
+      if(onChange) onChange(tab.id);
+    });
+    tab.addEventListener("keydown", e => {
+      const i = tabs.indexOf(tab);
+      if(e.key === "ArrowRight" || e.key === "ArrowLeft"){
+        e.preventDefault();
+        tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length].focus();
+      }
+    });
+  });
+}
+wireTabs(".work > section .tabs");
+wireTabs(".work > div .tabs", id => { activeView = id.replace("v-", ""); });
+
+/* ============================================================
+   입력 연결
+   ============================================================ */
+let debounce;
+dsl.addEventListener("input", () => {
+  clearTimeout(debounce);
+  debounce = setTimeout(() => {
+    try{ localStorage.setItem(STORAGE_KEY, dsl.value); }catch(e){}
+    render();
+  }, 160);
+});
+
+$("#btn-preset").addEventListener("click", () => setText(PRESET));
+$("#btn-clear").addEventListener("click", () => {
+  if(dsl.value.trim() && !confirm("입력한 내용을 모두 지웁니다. 계속할까요?")) return;
+  setText("[품목]\n\n[시험]\n\n[재활용]\n");
+});
+$("#btn-fmt").addEventListener("click", () => {
+  const out = dsl.value.split("\n").map(l => {
+    const s = l.trim();
+    if(!s || s.startsWith("#") || /^\[.+\]$/.test(s)) return s;
+    return s.split("|").map(x => x.trim()).join(" | ");
+  }).join("\n");
+  setText(out, { keepScroll:true });
+});
+
+/* 한 줄 추가 */
+document.querySelectorAll("#kind-seg button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#kind-seg button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    $("#quick-item").hidden = b.dataset.kind !== "item";
+    $("#quick-test").hidden = b.dataset.kind !== "test";
+    $("#quick-reuse").hidden = b.dataset.kind !== "reuse";
+  });
+});
+$("#quick-item").addEventListener("submit", e => {
+  e.preventDefault();
+  const st = normalizeStage($("#q-stage").value) || { index:-1, state:"idle" };
+  const line = formatItem({
+    level: $("#q-level").value,
+    kind: $("#q-kind").value,
+    name: $("#q-name").value.trim() || "이름 없음",
+    version: $("#q-ver").value,
+    qty: toInt($("#q-qty").value, 1),
+    stage: st.index,
+    state: st.state,
+    note: $("#q-note").value.trim()
+  });
+  setText(appendToSection(dsl.value, "item", line));
+  $("#q-name").value = ""; $("#q-note").value = ""; $("#q-name").focus();
+});
+$("#quick-test").addEventListener("submit", e => {
+  e.preventDefault();
+  const line = formatTest({
+    name: $("#qt-name").value.trim() || "이름 없음",
+    targetRaw: $("#qt-target").value,
+    qty: toInt($("#qt-qty").value, 1),
+    date: $("#qt-date").value,
+    result: $("#qt-result").value,
+    note: $("#qt-note").value.trim()
+  });
+  setText(appendToSection(dsl.value, "test", line));
+  $("#qt-name").value = ""; $("#qt-note").value = ""; $("#qt-name").focus();
+});
+$("#quick-reuse").addEventListener("submit", e => {
+  e.preventDefault();
+  const line = formatReuse({
+    purpose: $("#qr-name").value.trim() || "용도 미정",
+    from: $("#qr-from").value,
+    qty: toInt($("#qr-qty").value, 1),
+    note: $("#qr-note").value.trim()
+  });
+  setText(appendToSection(dsl.value, "reuse", line));
+  $("#qr-name").value = ""; $("#qr-note").value = ""; $("#qr-name").focus();
+});
+
+/* 표 편집 */
+$("#edit-table").addEventListener("change", e => {
+  const tr = e.target.closest("tr[data-row]");
+  if(tr) commitRow(tr);
+});
+$("#edit-table").addEventListener("click", e => {
+  if(!e.target.classList.contains("row-del")) return;
+  const tr = e.target.closest("tr[data-row]");
+  if(tr) setText(removeLine(dsl.value, Number(tr.dataset.row)), { keepScroll:true });
+});
+
+/* ============================================================
+   파일 · 공유 · 내보내기
+   ============================================================ */
+function download(name, mime, data){
+  const blob = new Blob([data], { type:mime + ";charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function stamp(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+}
+function toCSV(){
+  const q = s => `"${String(s ?? "").replace(/"/g, '""')}"`;
+  const rows = [["종류", "레벨", "품목명", "버전", "수량", "단계", "비고"]];
+  model.items.forEach(i => rows.push(["품목", LEVEL_BY_ID[i.level].ko, (i.kind === "addon" ? "+ " : "") + i.name, i.version, i.qty, stageLabel(i.stage, i.state), i.note]));
+  model.tests.forEach(t => rows.push(["시험", t.targetRaw, t.name, "", t.qty, t.result, [t.date, t.note].filter(Boolean).join(" ")]));
+  model.reuses.forEach(r => rows.push(["재활용", "", r.purpose, "", r.qty, r.from, r.note]));
+  return "﻿" + rows.map(r => r.map(q).join(",")).join("\r\n");
+}
+function fromCSV(text){
+  const rows = [];
+  let cur = [], val = "", inQ = false;
+  const src = text.replace(/^﻿/, "");
+  for(let i = 0; i < src.length; i++){
+    const c = src[i];
+    if(inQ){
+      if(c === '"' && src[i + 1] === '"'){ val += '"'; i++; }
+      else if(c === '"') inQ = false;
+      else val += c;
+    }else if(c === '"') inQ = true;
+    else if(c === ","){ cur.push(val); val = ""; }
+    else if(c === "\n"){ cur.push(val); rows.push(cur); cur = []; val = ""; }
+    else if(c !== "\r") val += c;
+  }
+  if(val || cur.length){ cur.push(val); rows.push(cur); }
+
+  const out = { item:[], test:[], reuse:[] };
+  rows.forEach((r, idx) => {
+    if(!r.length || r.every(c => !c.trim())) return;
+    const kind = (r[0] || "").trim();
+    if(idx === 0 && /종류|type/i.test(kind)) return;
+    if(kind === "시험") out.test.push([r[2], r[1], r[4], (r[6] || "").split(" ")[0], r[5], (r[6] || "").split(" ").slice(1).join(" ")].map(x => (x || "").trim()).join(" | "));
+    else if(kind === "재활용") out.reuse.push([r[2], r[5], r[4], r[6]].map(x => (x || "").trim()).join(" | "));
+    else out.item.push([r[1], r[2], r[3], r[4], r[5], r[6]].map(x => (x || "").trim()).join(" | "));
+  });
+  return ["[품목]", ...out.item, "", "[시험]", ...out.test, "", "[재활용]", ...out.reuse, ""].join("\n");
+}
+function fromJSON(text){
+  const j = JSON.parse(text);
+  const items = (j.items || []).map(i => formatItem({
+    level: normalizeLevel(i.level) || i.level, kind: i.kind === "addon" ? "addon" : "main",
+    name: i.name || "이름 없음", version: normalizeVersion(i.version),
+    qty: toInt(i.qty, 1),
+    ...(() => { const s = normalizeStage(i.stage) || { index:-1, state:"idle" }; return { stage:s.index, state:s.state }; })(),
+    note: i.note || ""
+  }));
+  const tests = (j.tests || []).map(t => formatTest({
+    name:t.name || "이름 없음", targetRaw:t.target || t.targetRaw || "",
+    qty: toInt(t.qty, 1), date:t.date || "", result:RESULTS.includes(t.result) ? t.result : "대기", note:t.note || ""
+  }));
+  const reuses = (j.reuses || j.reuse || []).map(r => formatReuse({
+    purpose:r.purpose || "용도 미정", from:r.from || "", qty:toInt(r.qty, 1), note:r.note || ""
+  }));
+  return ["[품목]", ...items, "", "[시험]", ...tests, "", "[재활용]", ...reuses, ""].join("\n");
+}
+function loadFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result);
+    try{
+      if(/\.json$/i.test(file.name)) setText(fromJSON(text));
+      else if(/\.csv$/i.test(file.name)) setText(fromCSV(text));
+      else setText(text);
+    }catch(err){
+      alert(`«${file.name}» 을 읽지 못했습니다. 파일 형식을 확인해 주세요.\n\n${err.message}`);
+    }
+  };
+  reader.readAsText(file, "utf-8");
+}
+$("#file-input").addEventListener("change", e => {
+  if(e.target.files[0]) loadFile(e.target.files[0]);
+  e.target.value = "";
+});
+const wrap = $("#editor-wrap");
+["dragenter", "dragover"].forEach(ev => wrap.addEventListener(ev, e => {
+  e.preventDefault(); wrap.classList.add("drag-over");
+}));
+["dragleave", "drop"].forEach(ev => wrap.addEventListener(ev, e => {
+  e.preventDefault(); wrap.classList.remove("drag-over");
+}));
+wrap.addEventListener("drop", e => {
+  const f = e.dataTransfer.files[0];
+  if(f) loadFile(f);
+});
+
+$("#btn-exp-txt").addEventListener("click", () => download(`샘플플로우_${stamp()}.txt`, "text/plain", dsl.value));
+$("#btn-exp-csv").addEventListener("click", () => download(`샘플플로우_${stamp()}.csv`, "text/csv", toCSV()));
+$("#btn-exp-json").addEventListener("click", () => {
+  const out = {
+    items: model.items.map(i => ({ level:i.level, kind:i.kind, name:i.name, version:i.version, qty:i.qty, stage:stageLabel(i.stage, i.state), note:i.note })),
+    tests: model.tests.map(t => ({ name:t.name, target:t.targetRaw, qty:t.qty, date:t.date, result:t.result, note:t.note })),
+    reuses: model.reuses.map(r => ({ purpose:r.purpose, from:r.from, qty:r.qty, note:r.note }))
+  };
+  download(`샘플플로우_${stamp()}.json`, "application/json", JSON.stringify(out, null, 2));
+});
+
+function activeSVG(){
+  const map = { flow:"#canvas-flow", test:"#canvas-sankey", tree:"#canvas-tree" };
+  return document.querySelector(`${map[activeView]} svg`);
+}
+$("#btn-exp-svg").addEventListener("click", () => {
+  const svg = activeSVG();
+  if(!svg){ alert("지금 보고 있는 화면은 SVG로 저장할 수 없습니다. 공정 플로우나 시험·재활용 탭에서 눌러 주세요."); return; }
+  download(`샘플플로우_${activeView}_${stamp()}.svg`, "image/svg+xml", new XMLSerializer().serializeToString(svg));
+});
+$("#btn-png").addEventListener("click", () => {
+  const svg = activeSVG();
+  if(!svg){ alert("지금 보고 있는 화면은 이미지로 저장할 수 없습니다. 공정 플로우나 시험·재활용 탭에서 눌러 주세요."); return; }
+  const w = Number(svg.getAttribute("width")), h = Number(svg.getAttribute("height"));
+  const scale = 2;
+  const data = new XMLSerializer().serializeToString(svg);
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement("canvas");
+    cv.width = w * scale; cv.height = h * scale;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = tokens().surface;
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    cv.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `샘플플로우_${activeView}_${stamp()}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, "image/png");
+  };
+  img.onerror = () => alert("이미지를 만들지 못했습니다. SVG로 저장한 뒤 변환해 주세요.");
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(data);
+});
+
+/* 공유 링크 */
+function encodeState(s){
+  const bytes = new TextEncoder().encode(s);
+  let bin = "";
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function decodeState(s){
+  const b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(b64 + "=".repeat((4 - b64.length % 4) % 4));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+$("#btn-share").addEventListener("click", async () => {
+  const url = location.origin + location.pathname + "#d=" + encodeState(dsl.value);
+  const btn = $("#btn-share");
+  const say = msg => { btn.textContent = msg; setTimeout(() => { btn.textContent = "공유 링크 복사"; }, 1800); };
+  try{
+    await navigator.clipboard.writeText(url);
+    say(url.length > 8000 ? "복사됨 (주소가 깁니다)" : "복사했습니다");
+  }catch(e){
+    location.hash = "d=" + encodeState(dsl.value);
+    say("주소창에 담았습니다");
+  }
+});
+
+/* 테마 */
+function applyTheme(mode){
+  if(mode) document.documentElement.setAttribute("data-theme", mode);
+  else document.documentElement.removeAttribute("data-theme");
+  render();
+}
+$("#btn-theme").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = cur ? (cur === "dark" ? "light" : "dark") : (prefersDark ? "light" : "dark");
+  try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
+  applyTheme(next);
+});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if(!document.documentElement.getAttribute("data-theme")) render();
+});
+
+/* ============================================================
+   시작
+   ============================================================ */
+(function boot(){
+  try{
+    const saved = localStorage.getItem(THEME_KEY);
+    if(saved === "dark" || saved === "light") document.documentElement.setAttribute("data-theme", saved);
+  }catch(e){}
+
+  let initial = null;
+  const m = location.hash.match(/[#&]d=([^&]+)/);
+  if(m){
+    try{ initial = decodeState(m[1]); }catch(e){ initial = null; }
+  }
+  if(initial === null){
+    try{ initial = localStorage.getItem(STORAGE_KEY); }catch(e){}
+  }
+  dsl.value = initial && initial.trim() ? initial : PRESET;
+  dsl.scrollTop = 0;
+  render();
+})();
+</script>
+</body>
+</html>
