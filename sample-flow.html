@@ -287,8 +287,17 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
 }
 
 /* ============================================================
-   KPI
+   관점 · KPI
    ============================================================ */
+.lensbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.lens-label{
+  font-size:10.5px;font-weight:650;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);flex:none;
+}
+.seg.lens{flex:none;background:var(--surface);box-shadow:var(--shadow);}
+.seg.lens button{padding:6px 13px;font-size:12px;}
+.lens-hint{font-size:11.5px;color:var(--muted);min-width:0;flex:1 1 240px;}
+
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:14px;}
 .kpi{
   background:var(--surface);border:1px solid var(--line);border-radius:11px;
@@ -403,7 +412,9 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
             <dt>버전</dt><dd><code>v1</code> <code>v2</code> … 생략하면 v1</dd>
             <dt>단계</dt><dd><code>생산</code> <code>입고</code> <code>조립</code> <code>출하</code> · 뒤에 <code>중</code>을 붙이면 진행 중 (<code>조립중</code>)</dd>
             <dt>[시험]</dt><dd>시험명 | 대상 | 수량 | 일정 | 결과(<code>대기</code>/<code>진행중</code>/<code>합격</code>/<code>불합격</code>) | 비고</dd>
+            <dt>일정</dt><dd>주차로 <code>26W07</code>, 기간이면 <code>26W07~26W10</code> · <code>2026-03-05</code> 로 적어도 주차로 바꿔 받습니다</dd>
             <dt>[재활용]</dt><dd>용도 | 출처 시험명 | 수량 | 비고</dd>
+            <dt>재투입</dt><dd>용도 자리에 <b>다른 시험 이름</b>을 적으면 그 시험으로 넘어갑니다 — 계보 탭에서 곡선으로 이어집니다</dd>
             <dt>주석</dt><dd><code>#</code> 로 시작하는 줄과 빈 줄은 무시합니다</dd>
           </dl>
         </details>
@@ -464,8 +475,11 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
           <div class="field"><label for="qt-qty">투입 수량</label>
             <input id="qt-qty" type="number" min="1" step="1" value="1">
           </div>
-          <div class="field"><label for="qt-date">일정</label>
-            <input id="qt-date" type="date">
+          <div class="field"><label for="qt-w1">시작 주차</label>
+            <input id="qt-w1" type="text" class="mono" placeholder="26W07" autocomplete="off">
+          </div>
+          <div class="field"><label for="qt-w2">종료 주차</label>
+            <input id="qt-w2" type="text" class="mono" placeholder="비우면 1주" autocomplete="off">
           </div>
           <div class="field"><label for="qt-result">결과</label>
             <select id="qt-result"><option>대기</option><option>진행중</option><option>합격</option><option>불합격</option></select>
@@ -477,8 +491,9 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
         </form>
 
         <form id="quick-reuse" class="form-grid" style="margin-top:12px;" hidden>
-          <div class="field wide"><label for="qr-name">재활용 용도</label>
-            <input id="qr-name" type="text" placeholder="예: 해체 분석용" required>
+          <div class="field wide"><label for="qr-name">재활용 용도 <span style="font-weight:400;color:var(--idle)">— 시험 이름을 적으면 그 시험으로 재투입</span></label>
+            <input id="qr-name" type="text" placeholder="예: 해체 분석용 / 뱅크 계통 연계" required list="test-names">
+            <datalist id="test-names"></datalist>
           </div>
           <div class="field"><label for="qr-from">출처 시험</label>
             <select id="qr-from"></select>
@@ -519,11 +534,18 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
 
     <!-- ── 뷰어 ─────────────────────────────── -->
     <div>
+      <div class="lensbar">
+        <span class="lens-label">관점</span>
+        <div class="seg lens" id="lens-seg" role="group" aria-label="팀별 관점"></div>
+        <span class="lens-hint" id="lens-hint"></span>
+      </div>
+
       <div class="kpis" id="kpis"></div>
 
       <section class="panel" aria-label="플로우">
         <div class="tabs" role="tablist" aria-label="보기 방식">
           <button class="tab" role="tab" id="v-flow" aria-controls="pv-flow" aria-selected="true">공정 플로우</button>
+          <button class="tab" role="tab" id="v-gene" aria-controls="pv-gene" aria-selected="false">시험 계보</button>
           <button class="tab" role="tab" id="v-test" aria-controls="pv-test" aria-selected="false">시험 · 재활용</button>
           <button class="tab" role="tab" id="v-tree" aria-controls="pv-tree" aria-selected="false">구성 트리</button>
         </div>
@@ -536,6 +558,19 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
             <span class="lg"><span class="ring"></span>미도달</span>
             <span class="lg"><span class="dash"></span>추가구성품</span>
             <span class="lg" style="margin-left:auto;">색이 진해질수록 상위 레벨 — 셀 → 팩 → 랙 → 링크</span>
+          </div>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="pv-gene" aria-labelledby="v-gene" hidden style="padding:0;">
+          <div class="canvas" id="canvas-gene"></div>
+          <div class="legend">
+            <span class="lg"><span class="dot" style="background:var(--ok)"></span>합격</span>
+            <span class="lg"><span class="dot" style="background:var(--crit)"></span>불합격</span>
+            <span class="lg"><span class="dot" style="background:var(--warn)"></span>진행중</span>
+            <span class="lg"><span class="dot" style="background:var(--idle)"></span>대기 · 미배정</span>
+            <span class="lg"><span class="dot" style="background:var(--test)"></span>다음 시험으로 재투입</span>
+            <span class="lg"><span class="dot" style="background:var(--reuse)"></span>시험 밖 용도</span>
+            <span class="lg" style="margin-left:auto;">가로축 = 주차 · 세로 점선 = 이번 주</span>
           </div>
         </div>
 
@@ -585,7 +620,75 @@ const SECTIONS = {
   reuse: { key:"reuse", head:"[재활용]", alias:["재활용","reuse","recycle","활용"] }
 };
 
-const PRESET = `# 2026 상반기 ESS 샘플 플로우
+/* 예시 데이터의 시험 일정은 지금 주차를 기준으로 만든다.
+   언제 열어 보든 지난 시험·진행 중인 시험·앞으로의 시험이 함께 보이도록. */
+/* ── 주차 ─────────────────────────────────────────────────────
+   시험 일정은 현장에서 주 단위로 잡으므로 x축도 주차로 간다.
+   2026-03-05 처럼 날짜로 적어도 ISO 주차로 바꿔 받는다. */
+const MON0 = Date.UTC(1970, 0, 5); // 1970-01-05, 월요일. 주차 번호의 기준점
+function isoWeekOf(y, m, d){
+  const t = new Date(Date.UTC(y, m - 1, d));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7)); // 그 주의 목요일
+  const yy = t.getUTCFullYear();
+  return { y:yy, w:Math.ceil(((t.getTime() - Date.UTC(yy, 0, 1)) / 86400000 + 1) / 7) };
+}
+function mondayOf(y, w){
+  const jan4 = new Date(Date.UTC(y, 0, 4));
+  const d = new Date(jan4);
+  d.setUTCDate(jan4.getUTCDate() - (jan4.getUTCDay() || 7) + 1 + (w - 1) * 7);
+  return d;
+}
+function weeksInYear(y){ return isoWeekOf(y, 12, 28).w; }
+function serialOf(p){ return Math.round((mondayOf(p.y, p.w).getTime() - MON0) / 604800000); }
+function mondayFromSerial(s){ return new Date(MON0 + s * 604800000); }
+function fmtWeek(p){ return String(p.y % 100).padStart(2, "0") + "W" + String(p.w).padStart(2, "0"); }
+
+function parseWeekToken(raw){
+  const s = String(raw ?? "").trim();
+  if(!s) return null;
+  let m = s.match(/^(\d{2}|\d{4})\s*[Ww]\s*(\d{1,2})$/);
+  if(m){
+    let y = Number(m[1]);
+    if(y < 100) y += 2000;
+    const w = Number(m[2]);
+    return (w >= 1 && w <= weeksInYear(y)) ? { y, w } : null;
+  }
+  m = s.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
+  if(m){
+    const y = +m[1], mo = +m[2], d = +m[3];
+    if(mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    return isoWeekOf(y, mo, d);
+  }
+  return null;
+}
+/* "26W07" · "26W07~26W10" · "2026-03-05" 를 모두 받는다 */
+function parseSchedule(raw){
+  const s = String(raw ?? "").trim();
+  if(!s) return { ok:true, when:null };
+  const parts = s.split(/\s*[~～－–—]\s*/).filter(x => x !== "");
+  if(parts.length > 2) return { ok:false };
+  const a = parseWeekToken(parts[0]);
+  if(!a) return { ok:false };
+  const b = parts[1] ? parseWeekToken(parts[1]) : a;
+  if(parts[1] && !b) return { ok:false };
+  let start = a, end = b;
+  if(serialOf(end) < serialOf(start)){ const t = start; start = end; end = t; }
+  return { ok:true, when:{ start, end, s0:serialOf(start), s1:serialOf(end) } };
+}
+function fmtSchedule(when){
+  if(!when) return "";
+  const a = fmtWeek(when.start), b = fmtWeek(when.end);
+  return a === b ? a : a + "~" + b;
+}
+
+const PRESET = (() => {
+  const now = new Date();
+  const anchor = serialOf(isoWeekOf(now.getFullYear(), now.getMonth() + 1, now.getDate()));
+  const wk = off => {
+    const d = mondayFromSerial(anchor + off);
+    return fmtWeek(isoWeekOf(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()));
+  };
+  return `# ESS 샘플 플로우 예시
 # 레벨 | 품목명 | 버전 | 수량 | 단계 | 비고
 # 품목명 앞의 + 는 추가구성품, 단계 뒤의 '중'은 진행 중
 
@@ -610,22 +713,25 @@ const PRESET = `# 2026 상반기 ESS 샘플 플로우
 
 [시험]
 # 시험명 | 대상 | 수량 | 일정 | 결과 | 비고
-셀 안전성(IEC 62619) | 셀 | 24 | 2026-03-05 | 합격 |
-셀 사이클 수명 | 셀 | 12 | 2026-03-20 | 진행중 | 3,000 사이클 목표
-모듈 진동·충격 | 팩 | 2 | 2026-04-02 | 합격 |
-모듈 열폭주 전이 | 팩 | 2 | 2026-04-15 | 불합격 | v1 격벽 관통
-랙 화재 전이(UL 9540A) | 랙 | 1 | 2026-05-08 | 진행중 |
-랙 성능(용량·효율) | 랙 | 2 | 2026-05-20 | 대기 |
-뱅크 계통 연계 | 링크 | 1 | 2026-06-10 | 대기 |
+# 일정은 26W07 처럼 주차로, 기간이면 26W07~26W10
+셀 안전성(IEC 62619) | 셀 | 24 | ${wk(-14)}~${wk(-13)} | 합격 |
+셀 사이클 수명 | 셀 | 12 | ${wk(-12)}~${wk(6)} | 진행중 | 3,000 사이클 목표
+모듈 진동·충격 | 팩 | 2 | ${wk(-8)}~${wk(-7)} | 합격 |
+모듈 열폭주 전이 | 팩 | 2 | ${wk(-6)} | 불합격 | v1 격벽 관통
+랙 화재 전이(UL 9540A) | 랙 | 1 | ${wk(-2)}~${wk(-1)} | 진행중 |
+랙 성능(용량·효율) | 랙 | 2 | ${wk(1)}~${wk(2)} | 대기 |
+뱅크 계통 연계 | 링크 | 2 | ${wk(4)}~${wk(6)} | 대기 | 랙 성능 시험품을 이어서 사용
 
 [재활용]
 # 용도 | 출처 시험 | 수량 | 비고
+# 용도 자리에 시험 이름을 적으면 그 시험으로 재투입된다
 해체 분석용 | 모듈 열폭주 전이 | 2 | 격벽 단면 분석
 교육·훈련 교보재 | 모듈 진동·충격 | 1 | 조립 실습용
 사내 전시용 | 셀 안전성(IEC 62619) | 6 |
-후속 시험 재투입 | 랙 성능(용량·효율) | 2 | 계통 연계 시험으로 이관
+뱅크 계통 연계 | 랙 성능(용량·효율) | 2 | 시험 후 상위 시험으로 이관
 소재 회수 후 폐기 | 셀 사이클 수명 | 12 | 리튬·구리 회수
 `;
+})();
 
 /* ============================================================
    파서 — 원본 줄 번호를 기억해서 표 편집이 그 줄만 고치게 한다
@@ -728,10 +834,15 @@ function parse(text){
         model.errors.push({ line:i + 1, msg:`결과 "${result}" 를 모릅니다. 대기 · 진행중 · 합격 · 불합격 중에서 골라 주세요.` });
         result = "대기";
       }
+      const sch = parseSchedule(f[3]);
+      if(!sch.ok){
+        model.errors.push({ line:i + 1, msg:`일정 "${f[3]}" 을 못 읽었습니다. 26W07 · 26W07~26W10 · 2026-03-05 형태로 적어 주세요.` });
+      }
       model.tests.push({
         row:i, name, targetRaw, level,
         qty: toInt(f[2], 1),
         date: (f[3] || "").trim(),
+        when: sch.ok ? sch.when : null,
         result,
         note: f.slice(5).join(" | ").trim()
       });
@@ -755,16 +866,6 @@ function parse(text){
       model.errors.push({ line:r.row + 1, msg:`"${r.from}" 이라는 시험이 [시험] 구역에 없습니다.` });
     }
   });
-  // 시험에 넣은 것보다 많이 재활용할 수는 없다
-  const perTest = new Map();
-  model.reuses.forEach(r => perTest.set(r.from, (perTest.get(r.from) || 0) + r.qty));
-  model.tests.forEach(t => {
-    const used = perTest.get(t.name) || 0;
-    if(used > t.qty){
-      model.errors.push({ line:t.row + 1, msg:`"${t.name}" 에 투입한 샘플은 ${t.qty}ea 인데 재활용에 ${used}ea 를 배정했습니다.` });
-    }
-  });
-
   model.tests.forEach(t => {
     if(t.targetRaw && !t.level){
       const known = model.items.some(it => it.name === t.targetRaw);
@@ -772,7 +873,61 @@ function parse(text){
     }
   });
 
+  linkUp(model);
   return model;
+}
+
+/* 재활용 용도가 다른 시험의 이름이면 그건 폐기가 아니라 그 시험으로의 재투입이다.
+   샘플이 시험을 건너다니는 계보가 여기서 만들어진다. */
+function linkUp(model){
+  const byName = new Map();
+  model.tests.forEach(t => { if(!byName.has(t.name)) byName.set(t.name, t); });
+  model.tests.forEach(t => { t.incoming = 0; t.outgoing = []; });
+
+  model.reuses.forEach(r => {
+    r.src = byName.get(r.from) || null;
+    r.dst = byName.get(r.purpose) || null;
+    r.cycle = false;
+    if(r.src) r.src.outgoing.push(r);
+    if(r.src && r.dst) r.dst.incoming += r.qty;
+  });
+
+  // 제자리로 돌아오는 재투입은 계보가 성립하지 않는다
+  const mark = new Map();
+  const walk = (t, path) => {
+    mark.set(t.name, 1);
+    t.outgoing.forEach(r => {
+      if(!r.dst) return;
+      if(mark.get(r.dst.name) === 1){
+        r.cycle = true;
+        model.errors.push({ line:r.row + 1, msg:`재투입이 제자리로 돌아옵니다: ${[...path, t.name, r.dst.name].join(" → ")}` });
+        return;
+      }
+      if(mark.get(r.dst.name) !== 2) walk(r.dst, [...path, t.name]);
+    });
+    mark.set(t.name, 2);
+  };
+  model.tests.forEach(t => { if(!mark.get(t.name)) walk(t, []); });
+
+  model.tests.forEach(t => {
+    t.allocated = t.outgoing.reduce((s, r) => s + r.qty, 0);
+    t.unassigned = Math.max(0, t.qty - t.allocated);
+    t.fresh = Math.max(0, t.qty - t.incoming); // 새로 조립해 넣어야 하는 몫
+    if(t.allocated > t.qty){
+      model.errors.push({ line:t.row + 1, msg:`"${t.name}" 에 투입한 샘플은 ${t.qty}ea 인데 시험 후 처리에 ${t.allocated}ea 를 배정했습니다.` });
+    }
+    if(t.incoming > t.qty){
+      model.errors.push({ line:t.row + 1, msg:`"${t.name}" 투입 수량은 ${t.qty}ea 인데 다른 시험에서 넘어온 것만 ${t.incoming}ea 입니다.` });
+    }
+  });
+
+  // 앞 시험이 끝나기 전에 뒤 시험이 시작하면 재투입이 성립하지 않는다
+  model.reuses.forEach(r => {
+    if(!r.src || !r.dst || r.cycle) return;
+    if(r.src.when && r.dst.when && r.dst.when.s0 < r.src.when.s1){
+      model.errors.push({ line:r.row + 1, msg:`"${r.dst.name}"(${fmtWeek(r.dst.when.start)} 시작)이 "${r.src.name}"(${fmtWeek(r.src.when.end)} 종료)보다 먼저 시작합니다.` });
+    }
+  });
 }
 
 /* 한 줄 만들기 ------------------------------------------------ */
@@ -834,9 +989,54 @@ function removeLine(text, row){
    ============================================================ */
 const STORAGE_KEY = "sample-flow-board:v1";
 const THEME_KEY = "sample-flow-board:theme";
+const LENS_KEY = "sample-flow-board:lens";
 const $ = sel => document.querySelector(sel);
 const dsl = $("#dsl");
 let model = { items:[], tests:[], reuses:[], errors:[] };
+let view = model;   // 관점이 걸린 뒤의 데이터 — 그림은 이걸 그린다
+let lens = "all";
+
+/* 관점(렌즈) — 팀마다 봐야 하는 게 다르다.
+   레벨 팀은 "우리 샘플을 언제 몇 개 준비해 어디로 보내나",
+   PM 은 "어느 시험이 언제 끝나나". */
+const LENSES = [
+  { id:"all",  label:"전체", tab:"v-flow",
+    hint:"모든 레벨과 시험을 함께 봅니다." },
+  { id:"cell", label:"셀 팀", tab:"v-flow", level:"cell",
+    hint:"셀을 언제 몇 개 준비해 어디로 보내야 하는지 — 셀 시험과 그 뒤로 이관되는 시험만 남깁니다." },
+  { id:"pack", label:"팩 팀", tab:"v-flow", level:"pack",
+    hint:"팩을 언제 몇 개 준비해 어디로 보내야 하는지 — 팩 시험과 그 뒤로 이관되는 시험만 남깁니다." },
+  { id:"rack", label:"랙 팀", tab:"v-flow", level:"rack",
+    hint:"랙을 언제 몇 개 준비해 어디로 보내야 하는지 — 랙 시험과 그 뒤로 이관되는 시험만 남깁니다." },
+  { id:"link", label:"링크 팀", tab:"v-flow", level:"link",
+    hint:"링크를 언제 몇 개 준비해 어디로 보내야 하는지 — 링크 시험과 그 뒤로 이관되는 시험만 남깁니다." },
+  { id:"pm",   label:"PM", tab:"v-gene",
+    hint:"어느 시험이 언제 끝나는지 — 레벨 구분 없이 종료 주차 순으로 늘어놓습니다." }
+];
+const LENS_BY_ID = Object.fromEntries(LENSES.map(l => [l.id, l]));
+
+function applyLens(m, id){
+  const L = LENS_BY_ID[id] || LENS_BY_ID.all;
+  if(!L.level) return { ...m, lens:id, flat:id === "pm" };
+
+  const seed = m.tests.filter(t => t.level === L.level);
+  const keep = new Set(seed);
+  // 우리 샘플이 넘어가는 다음 시험까지 따라간다 — "어디로 보내야 하나"에 답하려면 필요하다
+  const stack = [...seed];
+  while(stack.length){
+    const t = stack.pop();
+    t.outgoing.forEach(r => {
+      if(r.dst && !r.cycle && !keep.has(r.dst)){ keep.add(r.dst); stack.push(r.dst); }
+    });
+  }
+  return {
+    ...m,
+    items: m.items.filter(i => i.level === L.level),
+    tests: m.tests.filter(t => keep.has(t)),
+    reuses: m.reuses.filter(r => r.src && keep.has(r.src)),
+    lens:id, flat:false
+  };
+}
 
 function setText(next, opts){
   dsl.value = next;
@@ -907,14 +1107,14 @@ function emptyState(title, body){
    ============================================================ */
 function renderFlow(){
   const host = $("#canvas-flow");
-  if(!model.items.length){
+  if(!view.items.length){
     host.innerHTML = emptyState("아직 품목이 없습니다",
       "왼쪽 텍스트 탭에서 «예시 데이터» 를 눌러 보거나, 한 줄 추가 탭에서 품목을 넣어 보세요.");
     return;
   }
   const T = tokens();
 
-  const PAD = 16, LABEL_W = 272, COL_W = 128, TEST_W = 108;
+  const PAD = 16, LABEL_W = 272, COL_W = 128, TEST_W = 156;
   const HEAD_H = 52, ROW_H = 29, LANE_HEAD_H = 27, LANE_GAP = 38;
   const x0 = PAD + LABEL_W;
   const colX = i => x0 + COL_W * (i + 0.5);
@@ -924,7 +1124,7 @@ function renderFlow(){
   const lanes = LEVELS
     .map(l => ({
       ...l,
-      rows: model.items.filter(it => it.level === l.id).sort((a, b) =>
+      rows: view.items.filter(it => it.level === l.id).sort((a, b) =>
         (a.kind === b.kind ? 0 : a.kind === "main" ? -1 : 1) ||
         a.name.localeCompare(b.name, "ko") ||
         a.version.localeCompare(b.version))
@@ -932,15 +1132,19 @@ function renderFlow(){
     .filter(l => l.rows.length);
 
   // 시험은 보통 레벨 단위(랙 1대)라 레인 머리에 한 번만, 품목을 콕 집은 시험만 그 줄에 붙인다
-  const laneTests = id => model.tests.filter(t => t.level === id);
+  const laneTests = id => view.tests.filter(t => t.level === id);
   const namedTests = it => it.kind !== "main" ? []
-    : model.tests.filter(t => !t.level && t.targetRaw === it.name);
+    : view.tests.filter(t => !t.level && t.targetRaw === it.name);
   const testChip = (y, list) => {
     const q = list.reduce((s, t) => s + t.qty, 0);
+    // 팀이 알아야 하는 건 몇 개냐만이 아니라 언제까지냐다
+    const dated = list.filter(t => t.when).sort((a, b) => a.when.s0 - b.when.s0);
+    const label = `${list.length}종 ${q}ea` + (dated.length ? ` · ${fmtWeek(dated[0].when.start)}부터` : "");
+    const w = textW(label, 10) + 16;
     const parts = [];
-    parts.push(`<line x1="${colX(3) + 12}" y1="${y}" x2="${testX - 30}" y2="${y}" stroke="${T.test}" stroke-width="1.4" stroke-dasharray="3 3" opacity=".6" marker-end="url(#ah-t)"/>`);
-    parts.push(`<rect x="${testX - 28}" y="${y - 8.5}" width="60" height="17" rx="8.5" fill="${T.surface}" stroke="${T.test}" stroke-width="1.2" opacity=".9"/>`);
-    parts.push(`<text x="${testX + 2}" y="${y + 3.5}" text-anchor="middle" font-size="10" font-weight="650" fill="${T.test}">${list.length}종 ${q}ea</text>`);
+    parts.push(`<line x1="${colX(3) + 12}" y1="${y}" x2="${testX - w / 2 - 6}" y2="${y}" stroke="${T.test}" stroke-width="1.4" stroke-dasharray="3 3" opacity=".6" marker-end="url(#ah-t)"/>`);
+    parts.push(`<rect x="${testX - w / 2}" y="${y - 8.5}" width="${w}" height="17" rx="8.5" fill="${T.surface}" stroke="${T.test}" stroke-width="1.2" opacity=".9"/>`);
+    parts.push(`<text x="${testX}" y="${y + 3.5}" text-anchor="middle" font-size="10" font-weight="650" fill="${T.test}">${esc(label)}</text>`);
     return parts.join("");
   };
 
@@ -975,12 +1179,12 @@ function renderFlow(){
   STAGES.forEach((st, i) => {
     const cx = colX(i), left = x0 + COL_W * i;
     if(i % 2 === 0) p.push(`<rect x="${left}" y="${HEAD_H - 12}" width="${COL_W}" height="${H - HEAD_H + 4}" fill="${T.band}"/>`);
-    const reached = model.items.filter(it => it.stage >= i).length;
+    const reached = view.items.filter(it => it.stage >= i).length;
     p.push(`<text x="${cx}" y="22" text-anchor="middle" font-size="12.5" font-weight="650" fill="${T.ink}">${esc(st.ko)}</text>`);
     p.push(`<text x="${cx}" y="37" text-anchor="middle" font-size="10.5" fill="${T.muted}">${st.desc} · ${reached}건</text>`);
   });
   p.push(`<text x="${testX}" y="22" text-anchor="middle" font-size="12.5" font-weight="650" fill="${T.test}">시험 투입</text>`);
-  p.push(`<text x="${testX}" y="37" text-anchor="middle" font-size="10.5" fill="${T.muted}">${model.tests.length}개 항목</text>`);
+  p.push(`<text x="${testX}" y="37" text-anchor="middle" font-size="10.5" fill="${T.muted}">${view.tests.length}개 항목</text>`);
   p.push(`<line x1="${PAD}" y1="${HEAD_H - 12}" x2="${W - PAD}" y2="${HEAD_H - 12}" stroke="${T.line}" stroke-width="1"/>`);
 
   // 레인
@@ -1058,51 +1262,248 @@ function renderFlow(){
 }
 
 /* ============================================================
-   2) 시험 · 재활용 — 조립 샘플 → 시험 → 재활용 용도
+   2) 시험 계보 — y축은 시험(레벨별 그룹), x축은 주차.
+      시험이 끝난 샘플이 다음 시험으로 넘어가는 흐름을 곡선으로 잇는다.
+   ============================================================ */
+const RESULT_TONE = T => ({ "합격":T.ok, "불합격":T.crit, "진행중":T.warn, "대기":T.idle });
+
+function renderGenealogy(){
+  const host = $("#canvas-gene");
+  if(!view.tests.length){
+    host.innerHTML = emptyState("등록된 시험이 없습니다",
+      "[시험] 구역에 «시험명 | 대상 | 수량 | 26W07~26W10 | 결과» 형태로 적으면 일정과 샘플 계보를 그립니다.");
+    return;
+  }
+  const T = tokens(), tone = RESULT_TONE(T);
+
+  const PAD = 16, LABEL_W = 232, DISP_W = 250, GUTTER = 16;
+  const HEAD_H = 60, ROW_H = 34, GRP_H = 24, GRP_GAP = 14;
+  const W = 1080;
+  const axisX = PAD + LABEL_W;
+  const dispX = W - PAD - DISP_W;
+  const axisW = dispX - GUTTER - axisX;
+
+  // PM 관점에서는 레벨을 걷어내고 끝나는 순서대로 늘어놓는다
+  const groups = [];
+  if(view.flat){
+    groups.push({ name:"전체 시험 · 종료 순", color:T.test, list:[...view.tests] });
+    groups[0].list.sort((a, b) => {
+      const ae = a.when ? a.when.s1 : Infinity, be = b.when ? b.when.s1 : Infinity;
+      return ae - be || (a.when ? a.when.s0 : 0) - (b.when ? b.when.s0 : 0) || a.name.localeCompare(b.name, "ko");
+    });
+  }else{
+    LEVELS.forEach(l => {
+      const list = view.tests.filter(t => t.level === l.id);
+      if(list.length) groups.push({ name:l.ko + " 시험", color:T.lv[l.id], list });
+    });
+    const rest = view.tests.filter(t => !t.level);
+    if(rest.length) groups.push({ name:"기타 대상", color:T.idle, list:rest });
+    groups.forEach(g => g.list.sort((a, b) => {
+      const as = a.when ? a.when.s0 : Infinity, bs = b.when ? b.when.s0 : Infinity;
+      return as - bs || a.name.localeCompare(b.name, "ko");
+    }));
+  }
+
+  const sched = view.tests.filter(t => t.when);
+  const hasAxis = sched.length > 0;
+  const minS = hasAxis ? Math.min(...sched.map(t => t.when.s0)) - 1 : 0;
+  const maxS = hasAxis ? Math.max(...sched.map(t => t.when.s1)) + 1 : 0;
+  const ppw = hasAxis ? axisW / (maxS - minS + 1) : 0;
+  const xOf = s => axisX + (s - minS) * ppw;
+
+  let y = HEAD_H;
+  groups.forEach((g, gi) => {
+    g.top = y; y += GRP_H;
+    g.list.forEach(t => { t._y = y + ROW_H / 2; y += ROW_H; });
+    g.bottom = y;
+    if(gi < groups.length - 1) y += GRP_GAP;
+  });
+  const H = y + 18;
+
+  const out = [];
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="시험 일정과 시험 후 샘플 계보" font-family='${FONT}'>`);
+  out.push(`<defs>
+    <marker id="g-ah" viewBox="0 0 8 8" refX="6.8" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M0 0.6 L7.5 4 L0 7.4 z" fill="${T.test}"/></marker>
+    <marker id="g-ah-x" viewBox="0 0 8 8" refX="6.8" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M0 0.6 L7.5 4 L0 7.4 z" fill="${T.crit}"/></marker>
+  </defs>`);
+  out.push(`<rect width="${W}" height="${H}" fill="${T.surface}"/>`);
+
+  // 월 띠와 주차 눈금
+  if(hasAxis){
+    const bounds = [];
+    let cur = null;
+    for(let s = minS; s <= maxS + 1; s++){
+      const d = mondayFromSerial(s);
+      const key = d.getUTCFullYear() + "-" + d.getUTCMonth();
+      if(key !== cur){ bounds.push({ s, label:(d.getUTCMonth() + 1) + "월" }); cur = key; }
+    }
+    bounds.forEach((bd, i) => {
+      const x1 = xOf(bd.s), x2 = i + 1 < bounds.length ? xOf(bounds[i + 1].s) : xOf(maxS + 1);
+      if(i % 2 === 1) out.push(`<rect x="${x1}" y="${HEAD_H - 22}" width="${x2 - x1}" height="${H - HEAD_H + 8}" fill="${T.band}"/>`);
+      out.push(`<line x1="${x1}" y1="${HEAD_H - 22}" x2="${x1}" y2="${H - 12}" stroke="${T.line}" stroke-width="1"/>`);
+      if(x2 - x1 > 26) out.push(`<text x="${x1 + 5}" y="${20}" font-size="11.5" font-weight="650" fill="${T.ink2}">${esc(bd.label)}</text>`);
+    });
+    const step = Math.max(1, Math.ceil(36 / ppw));
+    for(let s = minS; s <= maxS; s += step){
+      const p = isoWeekOf(mondayFromSerial(s).getUTCFullYear(), mondayFromSerial(s).getUTCMonth() + 1, mondayFromSerial(s).getUTCDate());
+      out.push(`<text x="${xOf(s) + ppw / 2}" y="${37}" text-anchor="middle" font-size="10" fill="${T.muted}" font-family='${MONO}'>W${String(p.w).padStart(2, "0")}</text>`);
+    }
+  }
+  out.push(`<text x="${PAD}" y="${20}" font-size="12.5" font-weight="650" fill="${T.ink}">시험</text>`);
+  out.push(`<text x="${PAD}" y="${37}" font-size="10.5" fill="${T.muted}">${view.tests.length}건 · 투입 ${view.tests.reduce((s, t) => s + t.qty, 0)}ea</text>`);
+  out.push(`<text x="${dispX}" y="${20}" font-size="12.5" font-weight="650" fill="${T.reuse}">시험 후 처리</text>`);
+  out.push(`<text x="${dispX}" y="${37}" font-size="10.5" fill="${T.muted}">재투입 · 용도 · 미배정</text>`);
+  out.push(`<line x1="${PAD}" y1="${HEAD_H - 22}" x2="${W - PAD}" y2="${HEAD_H - 22}" stroke="${T.line}" stroke-width="1"/>`);
+
+  // 이번 주 — PM 이 "지금 어디까지 왔나"를 읽는 기준선
+  if(hasAxis){
+    const now = new Date();
+    const nowS = serialOf(isoWeekOf(now.getFullYear(), now.getMonth() + 1, now.getDate()));
+    if(nowS >= minS && nowS <= maxS){
+      const nx = xOf(nowS) + ppw / 2;
+      out.push(`<line x1="${nx}" y1="${HEAD_H - 22}" x2="${nx}" y2="${H - 12}" stroke="${T.crit}" stroke-width="1.4" stroke-dasharray="4 3" opacity=".75"/>`);
+      out.push(`<text x="${nx + 5}" y="${HEAD_H - 10}" font-size="10" font-weight="650" fill="${T.crit}">이번 주</text>`);
+    }
+  }
+
+  // 곡선은 막대 아래에 깔고, 이름표는 막대 위로 올린다 (아래 groups 뒤에 붙인다)
+  const overlay = [];
+  view.reuses.forEach(r => {
+    if(!r.src || !r.dst || r.cycle || r.src._y == null || r.dst._y == null) return;
+    const x1 = r.src.when && hasAxis ? xOf(r.src.when.s1 + 1) : axisX + 8;
+    const x2 = r.dst.when && hasAxis ? xOf(r.dst.when.s0) : axisX + 8;
+    const back = x2 < x1; // 뒤 시험이 먼저 시작 — 일정이 어긋난 경우
+    const col = back ? T.crit : T.test; // 다음 '시험'으로 가는 흐름이라 시험 색을 쓴다
+    const mx = (x1 + x2) / 2;
+    out.push(`<path d="M${x1} ${r.src._y} C${mx} ${r.src._y}, ${mx} ${r.dst._y}, ${x2} ${r.dst._y}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" ${back ? 'stroke-dasharray="4 3"' : ""} marker-end="url(#${back ? "g-ah-x" : "g-ah"})" opacity=".9"><title>${esc(`${r.src.name} → ${r.dst.name} · ${r.qty}ea 재투입${back ? " (일정 어긋남)" : ""}`)}</title></path>`);
+    const ly = (r.src._y + r.dst._y) / 2;
+    const lab = `${r.qty}ea 재투입`;
+    const lw = textW(lab, 10) + 12;
+    overlay.push(`<rect x="${mx - lw / 2}" y="${ly - 8}" width="${lw}" height="15" rx="7.5" fill="${T.surface}" stroke="${col}" stroke-width="1"/>`);
+    overlay.push(`<text x="${mx}" y="${ly + 3.5}" text-anchor="middle" font-size="10" font-weight="650" fill="${col}">${esc(lab)}</text>`);
+  });
+
+  groups.forEach(g => {
+    out.push(`<rect x="${PAD}" y="${g.top + 4}" width="3" height="${g.bottom - g.top - 6}" rx="1.5" fill="${g.color}"/>`);
+    const gq = g.list.reduce((s, t) => s + t.qty, 0);
+    out.push(`<text x="${PAD + 12}" y="${g.top + 16}" font-size="12.5" font-weight="680" fill="${g.color}">${esc(g.name)}</text>`);
+    out.push(`<text x="${PAD + 12 + textW(g.name, 12.5) + 9}" y="${g.top + 16}" font-size="10.5" fill="${T.muted}">${g.list.length}건 · ${gq}ea</text>`);
+
+    g.list.forEach(t => {
+      const cy = t._y;
+
+      // 왼쪽: 시험명과 투입 내역
+      out.push(`<text x="${PAD + 10}" y="${cy - 2}" font-size="12" font-weight="550" fill="${T.ink}">${esc(clipW(t.name, LABEL_W - 20, 12))}</text>`);
+      const sub = `${t.qty}ea` + (t.incoming ? ` · 신규 ${t.fresh} + 재투입 ${t.incoming}` : "");
+      out.push(`<text x="${PAD + 10}" y="${cy + 11}" font-size="10" fill="${T.muted}" font-family='${MONO}'>${esc(clipW(sub, LABEL_W - 20, 10))}</text>`);
+
+      // 가운데: 일정 막대
+      if(t.when && hasAxis){
+        const bx = xOf(t.when.s0);
+        const bw = Math.max(9, xOf(t.when.s1 + 1) - bx);
+        out.push(`<rect x="${bx}" y="${cy - 7}" width="${bw}" height="14" rx="3.5" fill="${tone[t.result]}" opacity="${t.result === "대기" ? .45 : .9}"/>`);
+        const cap = `${t.result} · ${fmtSchedule(t.when)}`;
+        const room = dispX - GUTTER - (bx + bw + 7);
+        if(room > 34) out.push(`<text x="${bx + bw + 7}" y="${cy + 4}" font-size="10" fill="${T.muted}" font-family='${MONO}'>${esc(clipW(cap, room, 10))}</text>`);
+      }else{
+        out.push(`<rect x="${axisX}" y="${cy - 7}" width="74" height="14" rx="3.5" fill="none" stroke="${T.line2}" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+        out.push(`<text x="${axisX + 37}" y="${cy + 4}" text-anchor="middle" font-size="10" fill="${T.muted}">일정 미정</text>`);
+      }
+
+      // 오른쪽: 시험이 끝난 샘플이 어디로 갔나
+      const segs = t.outgoing.filter(r => !r.cycle).map(r => ({
+        label: r.dst ? "→ " + r.dst.name : r.purpose,
+        qty: r.qty,
+        color: r.dst ? T.test : T.reuse
+      }));
+      if(t.unassigned > 0) segs.push({ label:"미배정", qty:t.unassigned, color:T.idle });
+      const stripW = 96;
+      let sx = dispX;
+      segs.forEach(sg => {
+        const w = Math.max(3, stripW * sg.qty / Math.max(1, t.qty));
+        out.push(`<rect x="${sx}" y="${cy - 12}" width="${w}" height="9" rx="2" fill="${sg.color}" opacity=".85"><title>${esc(sg.label + " " + sg.qty + "ea")}</title></rect>`);
+        sx += w;
+      });
+      if(!segs.length){
+        out.push(`<text x="${dispX}" y="${cy - 4}" font-size="10" fill="${T.idle}">처리 없음</text>`);
+      }else{
+        const txt = segs.map(sg => `${sg.label} ${sg.qty}`).join(" · ");
+        out.push(`<text x="${dispX}" y="${cy + 10}" font-size="10.5" fill="${T.ink2}">${esc(clipW(txt, DISP_W - 4, 10.5))}<title>${esc(txt)}</title></text>`);
+      }
+
+      out.push(`<rect x="${PAD}" y="${cy - ROW_H / 2}" width="${W - PAD * 2}" height="${ROW_H}" fill="transparent"><title>${esc(`${t.name} · ${t.targetRaw || "대상 미지정"} · ${t.qty}ea · ${t.result}${t.when ? " · " + fmtSchedule(t.when) : ""}${t.note ? " · " + t.note : ""}`)}</title></rect>`);
+    });
+  });
+
+  out.push(...overlay);
+  out.push("</svg>");
+  host.innerHTML = out.join("");
+}
+
+/* ============================================================
+   3) 시험 · 재활용 — 조립 샘플 → 시험 → 재활용 용도
    ============================================================ */
 function renderSankey(){
   const host = $("#canvas-sankey");
-  if(!model.tests.length){
+  if(!view.tests.length){
     host.innerHTML = emptyState("등록된 시험이 없습니다",
       "[시험] 구역에 «시험명 | 대상 | 수량 | 일정 | 결과» 형태로 적으면 조립 샘플이 어디로 흘러가는지 그립니다.");
     return;
   }
   const T = tokens();
 
-  // 좌: 레벨(또는 품목) / 중: 시험 / 우: 재활용 용도
+  // 좌: 조립 샘플과 재투입분 / 중: 시험 / 우: 시험 후 처리
+  const mid = view.tests.map(t => ({
+    key:t.name, label:t.name, value:t.qty, result:t.result,
+    date: t.when ? fmtSchedule(t.when) : t.date, test:t, inOff:0, outOff:0
+  }));
+
   const srcMap = new Map();
-  model.tests.forEach(t => {
-    const key = t.level || t.targetRaw || "미지정";
-    const label = t.level ? LEVEL_BY_ID[t.level].ko + " 조립 샘플" : (t.targetRaw || "미지정");
-    const cur = srcMap.get(key) || { key, label, value:0, color: t.level ? T.lv[t.level] : T.idle, out:0 };
-    cur.value += t.qty;
+  const addSrc = (key, label, color, v) => {
+    const cur = srcMap.get(key) || { key, label, value:0, color, out:0 };
+    cur.value += v;
     srcMap.set(key, cur);
+  };
+  const links1 = [];
+  const REINJECT = "__reinject";
+  mid.forEach(m => {
+    const t = m.test;
+    if(t.fresh > 0){
+      const key = t.level || t.targetRaw || "미지정";
+      addSrc(key, t.level ? LEVEL_BY_ID[t.level].ko + " 조립 샘플" : (t.targetRaw || "대상 미지정"),
+        t.level ? T.lv[t.level] : T.idle, t.fresh);
+      links1.push({ srcKey:key, to:m, value:t.fresh });
+    }
+    // 앞 시험에서 넘어온 몫은 새로 조립하지 않는다
+    if(t.incoming > 0){
+      addSrc(REINJECT, "시험 후 재투입", T.accent, t.incoming);
+      links1.push({ srcKey:REINJECT, to:m, value:t.incoming });
+    }
   });
   const src = [...srcMap.values()];
 
-  const mid = model.tests.map(t => ({
-    key:t.name, label:t.name, value:t.qty, result:t.result, date:t.date,
-    srcKey: t.level || t.targetRaw || "미지정", inOff:0, outOff:0
-  }));
-
   const dstMap = new Map();
   const links2 = [];
-  model.reuses.forEach(r => {
-    const test = mid.find(m => m.key === r.from);
-    if(!test) return; // 어느 시험에서 나온 샘플인지 모르면 흐름을 그릴 수 없다 — 오류 목록에서 알려 준다
-    const cur = dstMap.get(r.purpose) || { key:r.purpose, label:r.purpose, value:0, color:T.reuse, inOff:0 };
-    cur.value += r.qty;
-    dstMap.set(r.purpose, cur);
-    links2.push({ from:test, toKey:r.purpose, value:r.qty });
+  const addDst = (key, label, color, v) => {
+    const cur = dstMap.get(key) || { key, label, value:0, color, inOff:0 };
+    cur.value += v;
+    dstMap.set(key, cur);
+  };
+  view.reuses.forEach(r => {
+    if(!r.src || r.cycle) return; // 어느 시험에서 나왔는지 모르면 그릴 수 없다 — 오류 목록에서 알려 준다
+    const m = mid.find(x => x.test === r.src);
+    if(!m) return;
+    const key = r.dst ? REINJECT : r.purpose;
+    addDst(key, r.dst ? "시험 후 재투입" : r.purpose, r.dst ? T.accent : T.reuse, r.qty);
+    links2.push({ from:m, toKey:key, value:r.qty });
   });
   // 시험 수량 중 아직 용도가 정해지지 않은 몫
   mid.forEach(m => {
-    const used = links2.filter(l => l.from === m).reduce((s, l) => s + l.value, 0);
-    const rest = m.value - used;
+    const rest = m.test.unassigned;
     if(rest > 0){
-      const cur = dstMap.get("용도 미정 · 보관") || { key:"용도 미정 · 보관", label:"용도 미정 · 보관", value:0, color:T.idle, inOff:0 };
-      cur.value += rest;
-      dstMap.set("용도 미정 · 보관", cur);
+      addDst("용도 미정 · 보관", "용도 미정 · 보관", T.idle, rest);
       links2.push({ from:m, toKey:"용도 미정 · 보관", value:rest, muted:true });
     }
   });
@@ -1145,17 +1546,18 @@ function renderSankey(){
   p.push(`<text x="${X.src}" y="24" text-anchor="end" font-size="12.5" font-weight="650" fill="${T.ink}">조립 완료 샘플</text>`);
   p.push(`<text x="${X.src}" y="39" text-anchor="end" font-size="10.5" fill="${T.muted}">시험동 반출 기준</text>`);
   p.push(`<text x="${X.mid + NODE_W / 2}" y="24" text-anchor="middle" font-size="12.5" font-weight="650" fill="${T.test}">시험 항목</text>`);
-  p.push(`<text x="${X.mid + NODE_W / 2}" y="39" text-anchor="middle" font-size="10.5" fill="${T.muted}">${model.tests.length}건</text>`);
+  p.push(`<text x="${X.mid + NODE_W / 2}" y="39" text-anchor="middle" font-size="10.5" fill="${T.muted}">${view.tests.length}건</text>`);
   p.push(`<text x="${X.dst}" y="24" font-size="12.5" font-weight="650" fill="${T.reuse}">시험 후 재활용</text>`);
   p.push(`<text x="${X.dst}" y="39" font-size="10.5" fill="${T.muted}">${dst.length}개 용도</text>`);
 
   // 띠 — 좌→중
-  mid.forEach(m => {
-    const s = src.find(n => n.key === m.srcKey);
+  links1.sort((a, b) => a.to.y - b.to.y);
+  links1.forEach(l => {
+    const s = src.find(n => n.key === l.srcKey);
     if(!s) return;
-    const t = m.h;
-    p.push(ribbon(s.x + NODE_W, s.y + s.out, m.x, m.y + m.inOff, t, s.color, .3));
-    s.out += t; m.inOff += t;
+    const t = Math.max(4, l.value * scale);
+    p.push(ribbon(s.x + NODE_W, s.y + s.out, l.to.x, l.to.y + l.to.inOff, t, s.color, .3));
+    s.out += t; l.to.inOff += t;
   });
   // 띠 — 중→우
   links2.forEach(l => {
@@ -1205,11 +1607,11 @@ function renderSankey(){
    ============================================================ */
 function renderTree(){
   const host = $("#canvas-tree");
-  if(!model.items.length){
+  if(!view.items.length){
     host.innerHTML = emptyState("구성이 비어 있습니다", "품목을 넣으면 레벨이 서로를 어떻게 품는지 보여 줍니다.");
     return;
   }
-  const order = [...LEVELS].reverse().filter(l => model.items.some(i => i.level === l.id));
+  const order = [...LEVELS].reverse().filter(l => view.items.some(i => i.level === l.id));
   const stagePill = it => {
     const cls = it.stage < 0 ? "st-idle" : it.state === "wip" ? "st-wip" : "st-done";
     return `<span class="pill ${cls}">${esc(stageLabel(it.stage, it.state))}</span>`;
@@ -1225,7 +1627,7 @@ function renderTree(){
   const build = i => {
     if(i >= order.length) return "";
     const lv = order[i];
-    const rows = model.items.filter(it => it.level === lv.id);
+    const rows = view.items.filter(it => it.level === lv.id);
     const mains = rows.filter(r => r.kind === "main");
     const addons = rows.filter(r => r.kind === "addon");
     const total = rows.reduce((s, r) => s + r.qty, 0);
@@ -1247,40 +1649,103 @@ function renderTree(){
 /* ============================================================
    KPI
    ============================================================ */
+function nowSerial(){
+  const d = new Date();
+  return serialOf(isoWeekOf(d.getFullYear(), d.getMonth() + 1, d.getDate()));
+}
+
 function renderKpis(){
   const host = $("#kpis");
-  const items = model.items;
+  const card = (label, value, unit, sub, extra) => `
+    <div class="kpi">
+      <div class="k-label">${esc(label)}</div>
+      <div class="k-value">${esc(String(value))}${unit ? `<small>${esc(unit)}</small>` : ""}</div>
+      <div class="k-sub">${esc(sub)}</div>
+      ${extra || ""}
+    </div>`;
+
+  const items = view.items;
+  const tests = view.tests;
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
   // 추가구성품은 조립되며 흡수되니 출하율은 본품만 센다
   const mainItems = items.filter(i => i.kind === "main");
   const shipped = mainItems.filter(i => i.stage === 3 && i.state === "done").length;
   const rate = mainItems.length ? Math.round(shipped / mainItems.length * 100) : 0;
+  const testQty = tests.reduce((s, t) => s + t.qty, 0);
+  const scheduled = tests.filter(t => t.when);
+
+  /* PM — 언제 끝나는지가 전부다 */
+  if(view.lens === "pm"){
+    const now = nowSerial();
+    const running = tests.filter(t => t.result === "진행중");
+    const upcoming = scheduled.filter(t => t.when.s1 >= now).sort((a, b) => a.when.s1 - b.when.s1);
+    const next = upcoming[0];
+    const last = scheduled.slice().sort((a, b) => b.when.s1 - a.when.s1)[0];
+    const unassigned = tests.reduce((s, t) => s + t.unassigned, 0);
+    const late = view.reuses.filter(r => r.src && r.dst && r.src.when && r.dst.when && r.dst.when.s0 < r.src.when.s1).length;
+    const judged = tests.filter(t => t.result === "합격" || t.result === "불합격").length;
+
+    host.innerHTML = [
+      card("시험", tests.length, "건", `판정 완료 ${judged} · 진행중 ${running.length} · 대기 ${tests.length - judged - running.length}`),
+      card("다음 종료", next && next.when ? fmtWeek(next.when.end) : "—", "",
+        next ? clip(next.name, 18) : "종료 예정인 시험이 없습니다"),
+      card("전체 종료", last && last.when ? fmtWeek(last.when.end) : "—", "",
+        last ? `마지막 · ${clip(last.name, 16)}` : "일정이 잡힌 시험이 없습니다"),
+      // 종료 주차가 지났는데 아직 진행중이면 밀린 것이다
+      card("지연", tests.filter(t => t.result === "진행중" && t.when && t.when.s1 < now).length, "건",
+        `종료 주차 경과 · 일정 미정 ${tests.length - scheduled.length}건`),
+      card("투입 샘플", testQty.toLocaleString("ko-KR"), "ea", `미배정 ${unassigned}ea`),
+      card("일정 어긋남", late, "건", late ? "재투입이 앞 시험보다 먼저 시작합니다" : "재투입 순서 이상 없음")
+    ].join("");
+    return;
+  }
+
+  /* 레벨 팀 — 언제 몇 개를 어디로 */
+  const L = LENS_BY_ID[view.lens];
+  if(L && L.level){
+    const mine = tests.filter(t => t.level === L.level);
+    const need = mine.reduce((s, t) => s + t.fresh, 0);
+    const dated = mine.filter(t => t.when).sort((a, b) => a.when.s0 - b.when.s0);
+    const first = dated[0];
+    const handOff = view.reuses.filter(r => r.src && r.src.level === L.level && r.dst);
+    const handQty = handOff.reduce((s, r) => s + r.qty, 0);
+    const buckets = STAGES.map((_, i) => items.filter(it => it.stage === i).length);
+    const segTotal = Math.max(1, items.length);
+    const meter = [
+      ...buckets.map((n, i) => ({ n, c:`color-mix(in srgb, var(--accent) ${28 + i * 24}%, var(--surface-3))` })),
+      { n:items.filter(it => it.stage < 0).length, c:"var(--line-2)" }
+    ].filter(s => s.n > 0)
+     .map(s => `<span style="width:${(s.n / segTotal * 100).toFixed(2)}%;background:${s.c}"></span>`).join("");
+
+    host.innerHTML = [
+      card("보유 품목", items.length, "종", `본품 ${mainItems.length} · 추가 ${items.length - mainItems.length}`,
+        `<div class="meter">${meter}</div>`),
+      card("총 수량", totalQty.toLocaleString("ko-KR"), "ea", `본품 출하 ${rate}% · ${shipped}/${mainItems.length}`),
+      card("첫 납기", first ? fmtWeek(first.when.start) : "—", "",
+        first ? `${first.qty}ea · ${clip(first.name, 14)}` : "일정이 잡힌 시험이 없습니다"),
+      card("준비할 수량", need.toLocaleString("ko-KR"), "ea", `${mine.length}개 시험에 새로 투입`),
+      card("다음 시험 이관", handQty, "ea",
+        handOff.length ? handOff.map(r => clip(r.purpose, 12)).join(" · ") : "이관 예정 없음"),
+      card("일정 미정", mine.length - dated.length, "건", `우리 레벨 시험 ${mine.length}건 중`)
+    ].join("");
+    return;
+  }
+
+  /* 전체 */
   const improved = items.filter(i => i.version !== "v1");
   const impQty = improved.reduce((s, i) => s + i.qty, 0);
   const impRate = totalQty ? Math.round(impQty / totalQty * 100) : 0;
-  const done = model.tests.filter(t => t.result === "합격" || t.result === "불합격");
-  const pass = model.tests.filter(t => t.result === "합격").length;
-  const testQty = model.tests.reduce((s, t) => s + t.qty, 0);
-  const reuseQty = model.reuses.reduce((s, r) => s + r.qty, 0);
+  const done = tests.filter(t => t.result === "합격" || t.result === "불합격");
+  const pass = tests.filter(t => t.result === "합격").length;
+  const reuseQty = view.reuses.reduce((s, r) => s + r.qty, 0);
   const reuseRate = testQty ? Math.round(reuseQty / testQty * 100) : 0;
-
   const buckets = STAGES.map((_, i) => items.filter(it => it.stage === i).length);
-  const idle = items.filter(it => it.stage < 0).length;
   const segTotal = Math.max(1, items.length);
-  // 단계가 진행될수록 액센트가 진해진다 — 레벨 색과 헷갈리지 않게 한 계열만 쓴다
   const meter = [
     ...buckets.map((n, i) => ({ n, c:`color-mix(in srgb, var(--accent) ${28 + i * 24}%, var(--surface-3))` })),
-    { n:idle, c:"var(--line-2)" }
+    { n:items.filter(it => it.stage < 0).length, c:"var(--line-2)" }
   ].filter(s => s.n > 0)
-   .map((s, i, arr) => `<span style="width:${(s.n / segTotal * 100).toFixed(2)}%;background:${s.c}" title=""></span>`).join("");
-
-  const card = (label, value, unit, sub, extra) => `
-    <div class="kpi">
-      <div class="k-label">${esc(label)}</div>
-      <div class="k-value">${esc(value)}${unit ? `<small>${esc(unit)}</small>` : ""}</div>
-      <div class="k-sub">${sub}</div>
-      ${extra || ""}
-    </div>`;
+   .map(s => `<span style="width:${(s.n / segTotal * 100).toFixed(2)}%;background:${s.c}"></span>`).join("");
 
   host.innerHTML = [
     card("등록 품목", items.length, "종", `본품 ${mainItems.length} · 추가 ${items.length - mainItems.length}`,
@@ -1288,8 +1753,8 @@ function renderKpis(){
     card("총 수량", totalQty.toLocaleString("ko-KR"), "ea", `레벨 ${new Set(items.map(i => i.level)).size}개 구간`),
     card("본품 출하", rate, "%", `${shipped} / ${mainItems.length} 본품`),
     card("개선품 비중", impRate, "%", `v2 이상 ${improved.length}종 · ${impQty.toLocaleString("ko-KR")}ea`),
-    card("시험", model.tests.length, "건", `판정 완료 ${done.length} · 합격 ${pass}`),
-    card("재활용 확정", reuseRate, "%", `${reuseQty} / ${testQty}ea · ${new Set(model.reuses.map(r => r.purpose)).size}개 용도`)
+    card("시험", tests.length, "건", `판정 완료 ${done.length} · 합격 ${pass}`),
+    card("재활용 확정", reuseRate, "%", `${reuseQty} / ${testQty}ea · ${new Set(view.reuses.map(r => r.purpose)).size}개 용도`)
   ].join("");
 }
 
@@ -1337,7 +1802,7 @@ function renderTable(){
       rows.push(`<tr data-row="${t2.row}" data-type="test">
         <td colspan="2"><select data-f="targetRaw">${LEVELS.map(l => `<option value="${l.ko}" ${l.id === t2.level ? "selected" : ""}>${l.ko}</option>`).join("")}${t2.level ? "" : `<option value="${esc(t2.targetRaw)}" selected>${esc(clip(t2.targetRaw, 8))}</option>`}</select></td>
         <td><input data-f="name" value="${esc(t2.name)}"></td>
-        <td><input data-f="date" value="${esc(t2.date)}" class="mono" placeholder="YYYY-MM-DD"></td>
+        <td><input data-f="date" value="${esc(t2.date)}" class="mono" placeholder="26W07~26W10"></td>
         <td class="num"><input data-f="qty" type="number" min="1" value="${t2.qty}"></td>
         <td><select data-f="result">${RESULTS.map(r => `<option ${r === t2.result ? "selected" : ""}>${r}</option>`).join("")}</select></td>
         <td><button class="row-del" type="button" title="이 줄 삭제" aria-label="${esc(t2.name)} 삭제">×</button></td>
@@ -1403,9 +1868,11 @@ function commitRow(tr){
 let activeView = "flow";
 function render(){
   model = parse(dsl.value);
+  view = applyLens(model, lens);
   renderErrors();
   renderKpis();
   renderFlow();
+  renderGenealogy();
   renderSankey();
   renderTree();
   renderTable();
@@ -1419,6 +1886,8 @@ function refreshSelects(){
     + model.items.filter(i => i.kind === "main")
         .map(i => `<option value="${esc(i.name)}">${esc(clip(i.name, 18))}</option>`).join("");
   if(keep) tgt.value = keep;
+
+  $("#test-names").innerHTML = model.tests.map(t => `<option value="${esc(t.name)}"></option>`).join("");
 
   const from = $("#qr-from");
   const keep2 = from.value;
@@ -1453,6 +1922,33 @@ function wireTabs(listSel, onChange){
 }
 wireTabs(".work > section .tabs");
 wireTabs(".work > div .tabs", id => { activeView = id.replace("v-", ""); });
+
+function switchView(tabId){
+  const tab = document.getElementById(tabId);
+  if(tab && tab.getAttribute("aria-selected") !== "true") tab.click();
+}
+
+/* ============================================================
+   관점 전환
+   ============================================================ */
+$("#lens-seg").innerHTML = LENSES
+  .map(l => `<button type="button" data-lens="${l.id}" aria-pressed="${l.id === lens}">${esc(l.label)}</button>`)
+  .join("");
+
+function setLens(id, opts){
+  lens = LENS_BY_ID[id] ? id : "all";
+  try{ localStorage.setItem(LENS_KEY, lens); }catch(e){}
+  document.querySelectorAll("#lens-seg button").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.lens === lens)));
+  $("#lens-hint").textContent = LENS_BY_ID[lens].hint;
+  render();
+  // 관점을 고르면 그 팀이 먼저 볼 화면으로 데려간다
+  if(!opts || !opts.keepTab) switchView(LENS_BY_ID[lens].tab);
+}
+$("#lens-seg").addEventListener("click", e => {
+  const b = e.target.closest("button[data-lens]");
+  if(b) setLens(b.dataset.lens);
+});
 
 /* ============================================================
    입력 연결
@@ -1507,11 +2003,12 @@ $("#quick-item").addEventListener("submit", e => {
 });
 $("#quick-test").addEventListener("submit", e => {
   e.preventDefault();
+  const w1 = $("#qt-w1").value.trim(), w2 = $("#qt-w2").value.trim();
   const line = formatTest({
     name: $("#qt-name").value.trim() || "이름 없음",
     targetRaw: $("#qt-target").value,
     qty: toInt($("#qt-qty").value, 1),
-    date: $("#qt-date").value,
+    date: w1 && w2 ? `${w1}~${w2}` : w1,
     result: $("#qt-result").value,
     note: $("#qt-note").value.trim()
   });
@@ -1653,7 +2150,7 @@ $("#btn-exp-json").addEventListener("click", () => {
 });
 
 function activeSVG(){
-  const map = { flow:"#canvas-flow", test:"#canvas-sankey", tree:"#canvas-tree" };
+  const map = { flow:"#canvas-flow", gene:"#canvas-gene", test:"#canvas-sankey", tree:"#canvas-tree" };
   return document.querySelector(`${map[activeView]} svg`);
 }
 $("#btn-exp-svg").addEventListener("click", () => {
@@ -1749,7 +2246,10 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
   }
   dsl.value = initial && initial.trim() ? initial : PRESET;
   dsl.scrollTop = 0;
-  render();
+
+  let savedLens = "all";
+  try{ savedLens = localStorage.getItem(LENS_KEY) || "all"; }catch(e){}
+  setLens(savedLens, { keepTab:true });
 })();
 </script>
 </body>
