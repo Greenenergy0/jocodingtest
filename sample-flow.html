@@ -717,13 +717,13 @@ const PRESET = (() => {
     const d = mondayFromSerial(anchor + off);
     return fmtWeek(isoWeekOf(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()));
   };
-  return `# ESS 샘플 플로우 — Cell / Pack / LINK
+  return `# ESS 샘플 플로우 — Cell(JF2 159.2Ah) / Pack / LINK
 # 단계는 > 로 이어 붙이고 주차를 적을 수 있다. 한 단계만 적어도 된다.
 # 수량은 아래 [시험] 소요량과 [구성] 원단위에서 역산한 값이다.
 
 [구성]
 # 상위 | 구성품 | 상위 1대당 수량 | 비고
-팩 | 셀 | 120 | 30S4P
+팩 | 셀 | 120 | 30S4P · JF2 159.2Ah → 팩 4P 636.8Ah
 링크 | 팩 | 84 | M-LINK 3대 × 28팩
 링크 | + E-Panel | 1 |
 링크 | + M-LINK | 3 |
@@ -734,10 +734,10 @@ const PRESET = (() => {
 
 [품목]
 # 레벨 | 품목명 | 버전 | 수량 | 단계 | 비고
-셀 | CV Cell | v1 | 11280 | 생산 ${wk(-34)} > 입고 ${wk(-32)} > 조립 ${wk(-30)} > 출하 ${wk(-29)} | CV Pack 94대분
-셀 | DV Cell | v1 | 17720 | 생산 ${wk(-24)} > 입고 ${wk(-22)} > 조립 ${wk(-20)} > 출하 ${wk(-19)} | DV Pack 146대분 + 셀 인증 200
-셀 | PD Cell | v1 | 174960 | 생산 ${wk(-11)} > 입고 ${wk(-9)} > 조립중 ${wk(-3)} | PD Pack 1458대분
-셀 | PV Cell | v1 | 80640 | 생산 ${wk(6)} > 입고 ${wk(8)} | PV Pack 672대분
+셀 | CV Cell (JF2) | v1 | 11280 | 생산 ${wk(-34)} > 입고 ${wk(-32)} > 조립 ${wk(-30)} > 출하 ${wk(-29)} | JF2 159.2Ah · CV Pack 94대분
+셀 | DV Cell (JF2) | v1 | 17720 | 생산 ${wk(-24)} > 입고 ${wk(-22)} > 조립 ${wk(-20)} > 출하 ${wk(-19)} | JF2 159.2Ah · DV Pack 146대분 + 셀 인증 200
+셀 | PD Cell (JF2) | v1 | 174960 | 생산 ${wk(-11)} > 입고 ${wk(-9)} > 조립중 ${wk(-3)} | JF2 159.2Ah · PD Pack 1458대분
+셀 | PV Cell (JF2) | v1 | 80640 | 생산 ${wk(6)} > 입고 ${wk(8)} | JF2 159.2Ah · PV Pack 672대분
 팩 | CV Pack | v1 | 94 | 생산 ${wk(-29)} > 입고 ${wk(-28)} > 조립 ${wk(-27)} > 출하 ${wk(-26)} | 자체 시험 10 + CV Link 1대분 84
 팩 | DV Pack | v1 | 146 | 생산 ${wk(-19)} > 입고 ${wk(-18)} > 조립 ${wk(-17)} > 출하 ${wk(-16)} | 자체 시험 62 + DV Link 1대분 84
 팩 | PD Pack | v1 | 1458 | 생산 ${wk(-7)} > 입고 ${wk(-6)} > 조립중 ${wk(-2)} | 자체 시험 30 + PD Link 17대분 1428
@@ -755,8 +755,8 @@ const PRESET = (() => {
 
 [시험]
 # 시험명 | 대상 | 수량 | 일정 | 결과 | 비고
-Cell UN38.3 | DV Cell | 100 | ${wk(-18)}~${wk(-15)} | 합격 | 인증
-Cell UL9540A | DV Cell | 100 | ${wk(-17)}~${wk(-14)} | 합격 | 인증
+Cell UN38.3 | DV Cell (JF2) | 100 | ${wk(-18)}~${wk(-15)} | 합격 | 인증
+Cell UL9540A | DV Cell (JF2) | 100 | ${wk(-17)}~${wk(-14)} | 합격 | 인증
 Pack CV 평가 | CV Pack | 10 | ${wk(-25)}~${wk(-23)} | 합격 | 내부 Gate
 Pack DV 평가 | DV Pack | 40 | ${wk(-15)}~${wk(-11)} | 합격 | 내부 Gate
 Pack UN38.3 | DV Pack | 8 | ${wk(-14)}~${wk(-12)} | 합격 | 인증
