@@ -26,8 +26,7 @@
   --crit:#AF3A2E;
   --idle:#8C9694;
   --lv-cell:#5AA6AC;
-  --lv-pack:#3B7F9B;
-  --lv-rack:#2C5B87;
+  --lv-pack:#33739A;
   --lv-link:#2B3C69;
   --test:#B4531A;
   --reuse:#3E7A36;
@@ -56,7 +55,6 @@
     --idle:#6C7A77;
     --lv-cell:#7CC6CB;
     --lv-pack:#5AA4C2;
-    --lv-rack:#6194C7;
     --lv-link:#8496D6;
     --test:#E28C50;
     --reuse:#7EBD6E;
@@ -85,7 +83,6 @@
   --idle:#6C7A77;
   --lv-cell:#7CC6CB;
   --lv-pack:#5AA4C2;
-  --lv-rack:#6194C7;
   --lv-link:#8496D6;
   --test:#E28C50;
   --reuse:#7EBD6E;
@@ -355,6 +352,18 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
 .part .p-name{font-weight:520;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .part .p-qty{font-variant-numeric:tabular-nums;color:var(--muted);font-size:11.5px;}
 .subhead{font-size:10.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 0 2px;}
+.recipe{
+  font-size:12px;color:var(--ink-2);background:var(--surface-2);
+  border:1px solid var(--line);border-radius:8px;padding:7px 11px;margin:2px 0 8px;
+  max-width:660px;line-height:1.7;
+}
+.recipe b{font-weight:650;color:var(--ink);}
+.recipe em{font-style:normal;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;}
+.recipe .rc-note{color:var(--muted);font-size:11px;margin-left:3px;}
+.budget{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:0 0 8px;max-width:660px;}
+.bd{display:inline-flex;align-items:baseline;gap:5px;font-size:11.5px;}
+.bd-k{color:var(--muted);}
+.bd-v{font-variant-numeric:tabular-nums;font-weight:650;color:var(--ink);}
 
 .pill{
   display:inline-block;font-size:10.5px;font-weight:650;letter-spacing:.02em;
@@ -379,9 +388,9 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
 
   <header class="masthead">
     <div>
-      <p class="eyebrow">Cell · Pack · Rack · Link</p>
+      <p class="eyebrow">Cell · Pack · Link</p>
       <h1>샘플 플로우 보드</h1>
-      <p class="lede">레벨별 본품과 추가구성품의 생산·입고·조립·출하 진행, v1/v2 개선 이력, 조립 샘플의 시험 투입과 시험 후 재활용까지 한 장으로 봅니다. 왼쪽에 자유롭게 적으면 오른쪽이 즉시 다시 그려집니다.</p>
+      <p class="lede">레벨별 본품과 추가구성품의 생산·입고·조립·출하 진행, 구성표로 펼친 시험 소요량, 시험 투입과 시험 후 재활용까지 한 장으로 봅니다. 왼쪽에 자유롭게 적으면 오른쪽이 즉시 다시 그려집니다.</p>
     </div>
     <div class="mast-actions">
       <button class="btn" id="btn-theme" type="button">테마 전환</button>
@@ -412,7 +421,7 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
           <summary>쓰는 법 — 한 줄에 하나, 막대(<code>|</code>)로 구분</summary>
           <dl>
             <dt>[품목]</dt><dd>레벨 | 품목명 | 버전 | 수량 | 단계 | 비고</dd>
-            <dt>레벨</dt><dd><code>셀</code> <code>팩</code> <code>랙</code> <code>링크</code> (cell/pack/rack/link도 인식)</dd>
+            <dt>레벨</dt><dd><code>셀</code> <code>팩</code> <code>링크</code> (cell/pack/link도 인식)</dd>
             <dt>추가구성품</dt><dd>품목명 앞에 <code>+</code> — 예: <code>+ 냉각 플레이트</code></dd>
             <dt>버전</dt><dd><code>v1</code> <code>v2</code> … 생략하면 v1</dd>
             <dt>단계</dt><dd><code>생산</code> <code>입고</code> <code>조립</code> <code>출하</code> · 뒤에 <code>중</code>을 붙이면 진행 중 (<code>조립중</code>)</dd>
@@ -420,6 +429,8 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
             <dt>예정</dt><dd>아직 오지 않은 주차의 단계는 계획으로 보고 실적에서 뺍니다</dd>
             <dt>[시험]</dt><dd>시험명 | 대상 | 수량 | 일정 | 결과(<code>대기</code>/<code>진행중</code>/<code>합격</code>/<code>불합격</code>) | 비고</dd>
             <dt>일정</dt><dd>주차로 <code>26W07</code>, 기간이면 <code>26W07~26W10</code> · <code>2026-03-05</code> 로 적어도 주차로 바꿔 받습니다</dd>
+            <dt>[구성]</dt><dd>상위 레벨 | 구성품 | 상위 1대당 수량 | 비고 — 예: <code>팩 | 셀 | 120 | 30S4P</code></dd>
+            <dt>구성품</dt><dd>레벨명이면 아래 레벨로 펼치고, <code>+</code> 를 붙이면 그 레벨의 추가구성품입니다</dd>
             <dt>[재활용]</dt><dd>용도 | 출처 시험명 | 수량 | 비고</dd>
             <dt>재투입</dt><dd>용도 자리에 <b>다른 시험 이름</b>을 적으면 그 시험으로 넘어갑니다 — 계보 탭에서 곡선으로 이어집니다</dd>
             <dt>주석</dt><dd><code>#</code> 로 시작하는 줄과 빈 줄은 무시합니다</dd>
@@ -444,7 +455,7 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
 
         <form id="quick-item" class="form-grid" style="margin-top:12px;">
           <div class="field"><label for="q-level">레벨</label>
-            <select id="q-level"><option value="cell">셀</option><option value="pack">팩</option><option value="rack">랙</option><option value="link">링크</option></select>
+            <select id="q-level"><option value="cell">셀</option><option value="pack">팩</option><option value="link">링크</option></select>
           </div>
           <div class="field"><label for="q-kind">구분</label>
             <select id="q-kind"><option value="main">본품</option><option value="addon">추가구성품</option></select>
@@ -621,7 +632,6 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
 const LEVELS = [
   { id:"cell", ko:"셀",   token:"--lv-cell", alias:["셀","cell","전지"] },
   { id:"pack", ko:"팩",   token:"--lv-pack", alias:["팩","pack","모듈","module"] },
-  { id:"rack", ko:"랙",   token:"--lv-rack", alias:["랙","rack"] },
   { id:"link", ko:"링크", token:"--lv-link", alias:["링크","link","뱅크","bank"] }
 ];
 const LEVEL_BY_ID = Object.fromEntries(LEVELS.map(l => [l.id, l]));
@@ -635,7 +645,8 @@ const RESULTS = ["대기","진행중","합격","불합격"];
 const SECTIONS = {
   item:  { key:"item",  head:"[품목]",   alias:["품목","items","item","구성품"] },
   test:  { key:"test",  head:"[시험]",   alias:["시험","tests","test","평가"] },
-  reuse: { key:"reuse", head:"[재활용]", alias:["재활용","reuse","recycle","활용"] }
+  reuse: { key:"reuse", head:"[재활용]", alias:["재활용","reuse","recycle","활용"] },
+  bom:   { key:"bom",   head:"[구성]",   alias:["구성","bom","구성표","구성비"] }
 };
 
 /* 예시 데이터의 시험 일정은 지금 주차를 기준으로 만든다.
@@ -706,49 +717,72 @@ const PRESET = (() => {
     const d = mondayFromSerial(anchor + off);
     return fmtWeek(isoWeekOf(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()));
   };
-  return `# ESS 샘플 플로우 예시
-# 레벨 | 품목명 | 버전 | 수량 | 단계 | 비고
-# 품목명 앞의 + 는 추가구성품, 단계 뒤의 '중'은 진행 중
+  return `# ESS 샘플 플로우 — Cell / Pack / LINK
+# 단계는 > 로 이어 붙이고 주차를 적을 수 있다. 한 단계만 적어도 된다.
+# 수량은 아래 [시험] 소요량과 [구성] 원단위에서 역산한 값이다.
+
+[구성]
+# 상위 | 구성품 | 상위 1대당 수량 | 비고
+팩 | 셀 | 120 | 30S4P
+링크 | 팩 | 84 | M-LINK 3대 × 28팩
+링크 | + E-Panel | 1 |
+링크 | + M-LINK | 3 |
+링크 | + SKID | 1 |
+링크 | + PCS | 6 | M-LINK당 2열 × 1대
+링크 | + RBMS | 6 | M-LINK당 2열 × 1대
+링크 | + Cable | 1 | 세트 단위, 수량 확인 필요
 
 [품목]
-# 단계는 > 로 이어 붙이고 주차를 적을 수 있다. 한 단계만 적어도 된다.
-셀 | 각형 LFP 100Ah | v1 | 320 | 생산 ${wk(-22)} > 입고 ${wk(-20)} > 조립 ${wk(-18)} > 출하 ${wk(-17)} | 초도 물량
-셀 | 각형 LFP 100Ah | v2 | 160 | 생산 ${wk(-11)} > 입고 ${wk(-9)} > 조립 ${wk(-7)} | 벤트 개구 면적 확대
-셀 | + 셀 홀더 | v1 | 80 | 생산 ${wk(-21)} > 입고 ${wk(-19)} |
-셀 | + 절연 필름 | v2 | 80 | 생산 ${wk(-10)} > 입고 ${wk(-8)} | 두께 0.25 → 0.30t
-팩 | 1P16S 모듈 | v1 | 20 | 생산 ${wk(-16)} > 입고 ${wk(-14)} > 조립 ${wk(-12)} > 출하 ${wk(-11)} |
-팩 | 1P16S 모듈 | v2 | 10 | 생산 ${wk(-6)} > 입고 ${wk(-4)} > 조립중 ${wk(-1)} | 버스바 용접 조건 변경
-팩 | + 모듈 BMS(BMU) | v2 | 30 | 생산 ${wk(-7)} > 입고 ${wk(-5)} | 셀 전압 채널 확장
-팩 | + 냉각 플레이트 | v1 | 30 | 생산 ${wk(-15)} > 입고 ${wk(-13)} > 조립 ${wk(-12)} |
-팩 | + 압축 패드 | v1 | 60 | 입고 | 주차 미정
-랙 | 8모듈 랙 | v1 | 4 | 생산 ${wk(-10)} > 입고 ${wk(-8)} > 조립 ${wk(-6)} > 출하 ${wk(-5)} |
-랙 | 8모듈 랙 | v2 | 2 | 생산 ${wk(-3)} > 입고 ${wk(-1)} > 조립중 | 격벽 재질 변경
-랙 | + 랙 BMS(RMU) | v2 | 6 | 생산 ${wk(-4)} > 입고 ${wk(-2)} |
-랙 | + 고전압 커넥터 | v1 | 12 | 생산 ${wk(-9)} > 입고 ${wk(-7)} > 조립 ${wk(-6)} |
-랙 | + 소화 노즐 | v1 | 6 | 생산중 | 협력사 제작, 주차 미정
-링크 | 4랙 뱅크 | v1 | 1 | 생산 ${wk(-1)} > 입고 ${wk(2)} > 조립 ${wk(4)} | 입고부터는 계획
-링크 | + 링크 BMS(SMU) | v1 | 2 | 생산 ${wk(0)} > 입고 ${wk(2)} |
-링크 | + 파워 케이블 세트 | v1 | 2 | 생산 ${wk(0)} > 입고 ${wk(2)} > 조립 ${wk(4)} |
+# 레벨 | 품목명 | 버전 | 수량 | 단계 | 비고
+셀 | CV Cell | v1 | 11280 | 생산 ${wk(-34)} > 입고 ${wk(-32)} > 조립 ${wk(-30)} > 출하 ${wk(-29)} | CV Pack 94대분
+셀 | DV Cell | v1 | 17720 | 생산 ${wk(-24)} > 입고 ${wk(-22)} > 조립 ${wk(-20)} > 출하 ${wk(-19)} | DV Pack 146대분 + 셀 인증 200
+셀 | PD Cell | v1 | 174960 | 생산 ${wk(-11)} > 입고 ${wk(-9)} > 조립중 ${wk(-3)} | PD Pack 1458대분
+셀 | PV Cell | v1 | 80640 | 생산 ${wk(6)} > 입고 ${wk(8)} | PV Pack 672대분
+팩 | CV Pack | v1 | 94 | 생산 ${wk(-29)} > 입고 ${wk(-28)} > 조립 ${wk(-27)} > 출하 ${wk(-26)} | 자체 시험 10 + CV Link 1대분 84
+팩 | DV Pack | v1 | 146 | 생산 ${wk(-19)} > 입고 ${wk(-18)} > 조립 ${wk(-17)} > 출하 ${wk(-16)} | 자체 시험 62 + DV Link 1대분 84
+팩 | PD Pack | v1 | 1458 | 생산 ${wk(-7)} > 입고 ${wk(-6)} > 조립중 ${wk(-2)} | 자체 시험 30 + PD Link 17대분 1428
+팩 | PV Pack | v1 | 672 | 생산 ${wk(10)} > 입고 ${wk(11)} | PV Link 8대분
+링크 | CV Link | v1 | 1 | 생산 ${wk(-26)} > 입고 ${wk(-25)} > 조립 ${wk(-24)} > 출하 ${wk(-23)} |
+링크 | DV Link | v1 | 1 | 생산 ${wk(-16)} > 입고 ${wk(-15)} > 조립 ${wk(-14)} > 출하 ${wk(-13)} |
+링크 | PD Link | v1 | 17 | 생산 ${wk(-5)} > 입고 ${wk(-3)} > 조립중 ${wk(-1)} | DFM 1 + Line set-up 2 + PD 공정성 8 + UL9540 1 + LSFT 5
+링크 | PV Link | v1 | 8 | 생산 ${wk(13)} > 입고 ${wk(15)} > 조립 ${wk(17)} | PV 공정성 8
+링크 | + E-Panel | v1 | 27 | 생산 ${wk(-8)} > 입고 ${wk(-4)} | LINK 27대 × 1
+링크 | + M-LINK | v1 | 81 | 생산 ${wk(-11)} > 입고 ${wk(-6)} | LINK 27대 × 3
+링크 | + SKID | v1 | 27 | 생산 ${wk(-11)} > 입고 ${wk(-6)} | LINK 27대 × 1
+링크 | + PCS | v1 | 162 | 생산 ${wk(-9)} > 입고 ${wk(-4)} | LINK 27대 × 6
+링크 | + RBMS | v1 | 162 | 생산 ${wk(-9)} > 입고 ${wk(-5)} | LINK 27대 × 6
+링크 | + Cable | v1 | 27 | 입고 ${wk(-3)} | LINK 27대 × 1세트
 
 [시험]
 # 시험명 | 대상 | 수량 | 일정 | 결과 | 비고
-# 일정은 26W07 처럼 주차로, 기간이면 26W07~26W10
-셀 안전성(IEC 62619) | 셀 | 24 | ${wk(-14)}~${wk(-13)} | 합격 |
-셀 사이클 수명 | 셀 | 12 | ${wk(-12)}~${wk(6)} | 진행중 | 3,000 사이클 목표
-모듈 진동·충격 | 팩 | 2 | ${wk(-8)}~${wk(-7)} | 합격 |
-모듈 열폭주 전이 | 팩 | 2 | ${wk(-6)} | 불합격 | v1 격벽 관통
-랙 화재 전이(UL 9540A) | 랙 | 1 | ${wk(-2)}~${wk(-1)} | 진행중 |
-랙 성능(용량·효율) | 랙 | 2 | ${wk(1)}~${wk(2)} | 대기 |
-뱅크 계통 연계 | 링크 | 2 | ${wk(4)}~${wk(6)} | 대기 | 랙 성능 시험품을 이어서 사용
+Cell UN38.3 | DV Cell | 100 | ${wk(-18)}~${wk(-15)} | 합격 | 인증
+Cell UL9540A | DV Cell | 100 | ${wk(-17)}~${wk(-14)} | 합격 | 인증
+Pack CV 평가 | CV Pack | 10 | ${wk(-25)}~${wk(-23)} | 합격 | 내부 Gate
+Pack DV 평가 | DV Pack | 40 | ${wk(-15)}~${wk(-11)} | 합격 | 내부 Gate
+Pack UN38.3 | DV Pack | 8 | ${wk(-14)}~${wk(-12)} | 합격 | 인증
+Pack UL9540A | DV Pack | 10 | ${wk(-13)}~${wk(-10)} | 합격 | 인증
+Pack UL1973 | DV Pack | 4 | ${wk(-12)}~${wk(-9)} | 불합격 | 인증, 재시험 검토
+Pack PD·PV 평가 | PD Pack | 30 | ${wk(-1)}~${wk(4)} | 진행중 | 내부 Gate, PD·PV 합산 30
+Link CV 평가 | CV Link | 1 | ${wk(-22)}~${wk(-20)} | 합격 | 내부 Gate
+Link DV 성능 | DV Link | 1 | ${wk(-12)}~${wk(-9)} | 합격 | 내부 Gate
+Link DFM 검증 | PD Link | 1 | ${wk(-1)}~${wk(1)} | 진행중 | 내부 Gate
+Link Line set-up | PD Link | 2 | ${wk(1)}~${wk(4)} | 대기 | 내부 Gate
+Link PD 공정성 평가 | PD Link | 8 | ${wk(5)}~${wk(10)} | 대기 | 내부 Gate
+Link UL9540 | PD Link | 1 | ${wk(7)}~${wk(10)} | 대기 | 인증
+Link Large scale fire test | PD Link | 5 | ${wk(11)}~${wk(15)} | 대기 | 인증
+Link PV 공정성 평가 | PV Link | 8 | ${wk(19)}~${wk(24)} | 대기 | 내부 Gate
 
 [재활용]
 # 용도 | 출처 시험 | 수량 | 비고
 # 용도 자리에 시험 이름을 적으면 그 시험으로 재투입된다
-해체 분석용 | 모듈 열폭주 전이 | 2 | 격벽 단면 분석
-교육·훈련 교보재 | 모듈 진동·충격 | 1 | 조립 실습용
-사내 전시용 | 셀 안전성(IEC 62619) | 6 |
-뱅크 계통 연계 | 랙 성능(용량·효율) | 2 | 시험 후 상위 시험으로 이관
-소재 회수 후 폐기 | 셀 사이클 수명 | 12 | 리튬·구리 회수
+Link PD 공정성 평가 | Link Line set-up | 2 | 라인 셋업 후 그대로 공정성 평가로 이관
+해체 분석용 | Pack UL1973 | 4 | 불합격 원인 분석
+해체 분석용 | Pack DV 평가 | 12 | 용접부·스웰링 단면
+교육·훈련 교보재 | Pack DV 평가 | 4 | 조립 실습용
+사내 전시용 | Pack CV 평가 | 2 |
+소재 회수 후 폐기 | Link Large scale fire test | 5 | 연소품
+소재 회수 후 폐기 | Cell UN38.3 | 100 | 리튬·구리 회수
+소재 회수 후 폐기 | Cell UL9540A | 100 |
 `;
 })();
 
@@ -847,7 +881,7 @@ function sectionOf(line){
 
 function parse(text){
   const lines = text.split("\n");
-  const model = { items:[], tests:[], reuses:[], errors:[] };
+  const model = { items:[], tests:[], reuses:[], boms:[], errors:[] };
   let section = "item";
 
   lines.forEach((raw, i) => {
@@ -895,6 +929,36 @@ function parse(text){
       return;
     }
 
+    if(section === "bom"){
+      const parent = normalizeLevel(f[0]);
+      if(!parent){
+        model.errors.push({ line:i + 1, msg:`구성의 상위 "${f[0] || "(빈칸)"}" 를 모릅니다. 셀 · 팩 · 링크 중에서 골라 주세요.` });
+        return;
+      }
+      let child = (f[1] || "").trim();
+      if(!child){ model.errors.push({ line:i + 1, msg:"구성품이 비었습니다." }); return; }
+      let kind = "part";
+      const forcedPart = /^[+＋]/.test(child);
+      if(forcedPart) child = child.replace(/^[+＋]\s*/, "");
+      const childLevel = forcedPart ? null : normalizeLevel(child);
+      if(childLevel){
+        kind = "level";
+        if(LEVELS.findIndex(l => l.id === childLevel) >= LEVELS.findIndex(l => l.id === parent)){
+          model.errors.push({ line:i + 1, msg:`"${LEVEL_BY_ID[parent].ko}" 안에 "${LEVEL_BY_ID[childLevel].ko}" 가 들어갈 수는 없습니다. 상위가 하위를 품는 순서로 적어 주세요.` });
+          return;
+        }
+      }
+      const per = toInt(f[2], 0);
+      if(!per){ model.errors.push({ line:i + 1, msg:"상위 1대당 수량을 1 이상으로 적어 주세요." }); return; }
+      model.boms.push({
+        row:i, parent, kind,
+        childLevel: childLevel || null,
+        childName: childLevel ? LEVEL_BY_ID[childLevel].ko : child,
+        per, note: f.slice(3).join(" | ").trim()
+      });
+      return;
+    }
+
     if(section === "test"){
       const name = (f[0] || "").trim();
       if(!name){ model.errors.push({ line:i + 1, msg:"시험명이 비었습니다." }); return; }
@@ -937,15 +1001,52 @@ function parse(text){
       model.errors.push({ line:r.row + 1, msg:`"${r.from}" 이라는 시험이 [시험] 구역에 없습니다.` });
     }
   });
+  // 대상이 품목명이면 그 품목의 레벨을 물려받는다 — 그래야 레벨 묶음과 소요 전개에 들어간다
   model.tests.forEach(t => {
-    if(t.targetRaw && !t.level){
-      const known = model.items.some(it => it.name === t.targetRaw);
-      if(!known) model.errors.push({ line:t.row + 1, msg:`시험 대상 "${t.targetRaw}" 이 레벨명도 품목명도 아닙니다.` });
-    }
+    if(!t.targetRaw || t.level) return;
+    const hit = model.items.find(it => it.name === t.targetRaw);
+    if(hit){ t.level = hit.level; t.itemName = hit.name; }
+    else model.errors.push({ line:t.row + 1, msg:`시험 대상 "${t.targetRaw}" 이 레벨명도 품목명도 아닙니다.` });
   });
 
   linkUp(model);
+  rollUp(model);
   return model;
+}
+
+/* 시험이 요구하는 수량을 구성표를 타고 아래 레벨로 펼친다.
+   링크 27대를 시험하려면 팩이 몇 개, 셀이 몇 개 필요한지가 여기서 나온다. */
+function rollUp(model){
+  const need = {}, direct = {}, fromAbove = {};
+  LEVELS.forEach(l => { need[l.id] = 0; direct[l.id] = 0; fromAbove[l.id] = 0; });
+  model.tests.forEach(t => { if(t.level) direct[t.level] += t.qty; });
+  LEVELS.forEach(l => { need[l.id] = direct[l.id]; });
+
+  const parts = new Map();
+  // 상위 레벨부터 내려와야 누적된 소요가 다음 단으로 이어진다
+  for(let i = LEVELS.length - 1; i >= 0; i--){
+    const lv = LEVELS[i].id;
+    model.boms.filter(b => b.parent === lv).forEach(b => {
+      const total = need[lv] * b.per;
+      if(b.childLevel){
+        need[b.childLevel] += total;
+        fromAbove[b.childLevel] += total;
+      }else{
+        const cur = parts.get(b.childName) || { name:b.childName, per:0, qty:0, parent:lv };
+        cur.per = b.per; cur.qty += total;
+        parts.set(b.childName, cur);
+      }
+    });
+  }
+
+  const planned = {}, plannedParts = new Map();
+  LEVELS.forEach(l => { planned[l.id] = 0; });
+  model.items.forEach(it => {
+    if(it.kind === "main") planned[it.level] += it.qty;
+    else plannedParts.set(it.name, (plannedParts.get(it.name) || 0) + it.qty);
+  });
+
+  model.demand = { need, direct, fromAbove, parts, planned, plannedParts };
 }
 
 /* 재활용 용도가 다른 시험의 이름이면 그건 폐기가 아니라 그 시험으로의 재투입이다.
@@ -1016,6 +1117,14 @@ function formatTest(t){
   return [t.name, t.targetRaw, String(t.qty), t.date, t.result, t.note || ""]
     .join(" | ").replace(/\s*\|\s*$/, " |");
 }
+function formatBom(b){
+  return [
+    LEVEL_BY_ID[b.parent].ko,
+    (b.kind === "level" ? "" : "+ ") + b.childName,
+    String(b.per),
+    b.note || ""
+  ].join(" | ").replace(/\s*\|\s*$/, " |");
+}
 function formatReuse(r){
   return [r.purpose, r.from, String(r.qty), r.note || ""]
     .join(" | ").replace(/\s*\|\s*$/, " |");
@@ -1083,8 +1192,6 @@ const LENSES = [
     hint:"셀을 언제 몇 개 준비해 어디로 보내야 하는지 — 셀 시험과 그 뒤로 이관되는 시험만 남깁니다." },
   { id:"pack", label:"팩 팀", tab:"v-flow", level:"pack",
     hint:"팩을 언제 몇 개 준비해 어디로 보내야 하는지 — 팩 시험과 그 뒤로 이관되는 시험만 남깁니다." },
-  { id:"rack", label:"랙 팀", tab:"v-flow", level:"rack",
-    hint:"랙을 언제 몇 개 준비해 어디로 보내야 하는지 — 랙 시험과 그 뒤로 이관되는 시험만 남깁니다." },
   { id:"link", label:"링크 팀", tab:"v-flow", level:"link",
     hint:"링크를 언제 몇 개 준비해 어디로 보내야 하는지 — 링크 시험과 그 뒤로 이관되는 시험만 남깁니다." },
   { id:"pm",   label:"PM", tab:"v-gene",
@@ -1245,9 +1352,9 @@ function renderFlowStage(T){
     .filter(l => l.rows.length);
 
   // 시험은 보통 레벨 단위(랙 1대)라 레인 머리에 한 번만, 품목을 콕 집은 시험만 그 줄에 붙인다
-  const laneTests = id => view.tests.filter(t => t.level === id);
+  const laneTests = id => view.tests.filter(t => t.level === id && !t.itemName);
   const namedTests = it => it.kind !== "main" ? []
-    : view.tests.filter(t => !t.level && t.targetRaw === it.name);
+    : view.tests.filter(t => t.itemName === it.name);
   const testChip = (y, list) => {
     const q = list.reduce((s, t) => s + t.qty, 0);
     // 팀이 알아야 하는 건 몇 개냐만이 아니라 언제까지냐다
@@ -1863,25 +1970,68 @@ function renderTree(){
       ${stagePill(it)}
     </div>`;
 
+  const num = n => Number(n || 0).toLocaleString("ko-KR");
+  const D = view.demand || { need:{}, direct:{}, fromAbove:{}, parts:new Map(), planned:{}, plannedParts:new Map() };
+
   const build = i => {
     if(i >= order.length) return "";
     const lv = order[i];
     const rows = view.items.filter(it => it.level === lv.id);
     const mains = rows.filter(r => r.kind === "main");
     const addons = rows.filter(r => r.kind === "addon");
-    const total = rows.reduce((s, r) => s + r.qty, 0);
+
+    // 이 레벨 1대가 무엇으로 구성되는가
+    const kids = (view.boms || []).filter(b => b.parent === lv.id);
+    const recipe = kids.length
+      ? `<div class="recipe"><b>${esc(lv.ko)} 1대</b> = ${kids
+          .map(b => `${esc(b.childName)} <em>${num(b.per)}</em>${b.note ? `<span class="rc-note">(${esc(b.note)})</span>` : ""}`)
+          .join(" · ")}</div>`
+      : "";
+
+    // 시험이 요구하는 수량 대 계획 수량
+    const need = D.need[lv.id] || 0;
+    const planned = D.planned[lv.id] || 0;
+    const short = need - planned;
+    const budget = need
+      ? `<div class="budget">
+           <span class="bd"><span class="bd-k">시험 소요</span><span class="bd-v">${num(need)}</span></span>
+           <span class="bd"><span class="bd-k">직접 시험</span><span class="bd-v">${num(D.direct[lv.id])}</span></span>
+           <span class="bd"><span class="bd-k">상위 조립</span><span class="bd-v">${num(D.fromAbove[lv.id])}</span></span>
+           <span class="bd"><span class="bd-k">계획 수량</span><span class="bd-v">${num(planned)}</span></span>
+           ${short > 0 ? `<span class="pill st-wip">${num(short)} 부족</span>`
+             : `<span class="pill st-done">소요 충족</span>`}
+         </div>`
+      : "";
+
     return `
       <div class="rung ${i === 0 ? "top" : ""}">
         <div class="rung-head">
           <span class="rung-dot" style="background:var(${lv.token})"></span>
           <span class="rung-name" style="color:var(${lv.token})">${esc(lv.ko)}</span>
-          <span class="rung-meta">${rows.length}품목 · ${total.toLocaleString("ko-KR")}ea</span>
+          <span class="rung-meta">${rows.length}품목 · 계획 ${num(rows.reduce((s, r) => s + r.qty, 0))}</span>
         </div>
+        ${recipe}
+        ${budget}
         ${mains.length ? `<div class="subhead">본품</div><div class="parts">${mains.map(partRow).join("")}</div>` : ""}
-        ${addons.length ? `<div class="subhead">추가구성품</div><div class="parts">${addons.map(partRow).join("")}</div>` : ""}
+        ${addons.length ? `<div class="subhead">추가구성품</div><div class="parts">${addons.map(addonRow).join("")}</div>` : ""}
         ${build(i + 1)}
       </div>`;
   };
+
+  // 추가구성품은 상위 소요 × 원단위와 나란히 보여 준다
+  const addonRow = it => {
+    const p = D.parts.get(it.name);
+    const req = p ? p.qty : null;
+    const lack = req != null && req > it.qty;
+    return `
+      <div class="part addon" title="${esc(it.note || it.name)}">
+        <span class="p-name">${esc(it.name)}</span>
+        <span class="pill v ${it.version !== "v1" ? "v-imp" : ""}">${esc(it.version)}</span>
+        <span class="p-qty">${it.qty.toLocaleString("ko-KR")}${req != null ? ` / 소요 ${num(req)}` : ""}</span>
+        ${lack ? `<span class="pill st-wip">부족</span>` : stagePill(it)}
+      </div>`;
+  };
+
   host.innerHTML = `<div class="tree">${build(0)}</div>`;
 }
 
@@ -1906,6 +2056,14 @@ function renderKpis(){
   const items = view.items;
   const tests = view.tests;
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
+  /* 셀·팩·링크는 단위가 달라 한 숫자로 더하면 뜻이 없다.
+     가장 아래 레벨을 머리로 세우고 나머지는 나란히 적는다. */
+  const perLevel = (pick) => LEVELS
+    .map(l => ({ l, n:pick(l.id) }))
+    .filter(x => x.n > 0);
+  const spread = (rows, empty) => rows.length > 1
+    ? rows.slice(1).map(x => `${x.l.ko} ${x.n.toLocaleString("ko-KR")}`).join(" · ")
+    : empty;
   // 추가구성품은 조립되며 흡수되니 출하율은 본품만 센다
   const mainItems = items.filter(i => i.kind === "main");
   const shipped = mainItems.filter(i => i.stage === 3 && i.state === "done").length;
@@ -1920,9 +2078,10 @@ function renderKpis(){
     const upcoming = scheduled.filter(t => t.when.s1 >= now).sort((a, b) => a.when.s1 - b.when.s1);
     const next = upcoming[0];
     const last = scheduled.slice().sort((a, b) => b.when.s1 - a.when.s1)[0];
-    const unassigned = tests.reduce((s, t) => s + t.unassigned, 0);
     const late = view.reuses.filter(r => r.src && r.dst && r.src.when && r.dst.when && r.dst.when.s0 < r.src.when.s1).length;
     const judged = tests.filter(t => t.result === "합격" || t.result === "불합격").length;
+    const inRows = perLevel(id => tests.filter(t => t.level === id).reduce((s, t) => s + t.qty, 0));
+    const unRows = perLevel(id => tests.filter(t => t.level === id).reduce((s, t) => s + t.unassigned, 0));
 
     host.innerHTML = [
       card("시험", tests.length, "건", `판정 완료 ${judged} · 진행중 ${running.length} · 대기 ${tests.length - judged - running.length}`),
@@ -1932,9 +2091,11 @@ function renderKpis(){
         last ? `마지막 · ${clip(last.name, 16)}` : "일정이 잡힌 시험이 없습니다"),
       // 종료 주차가 지났는데 아직 진행중이면 밀린 것이다
       card("지연", tests.filter(t => t.result === "진행중" && t.when && t.when.s1 < now).length, "건",
-        `종료 주차 경과 · 일정 미정 ${tests.length - scheduled.length}건`),
-      card("투입 샘플", testQty.toLocaleString("ko-KR"), "ea", `미배정 ${unassigned}ea`),
-      card("일정 어긋남", late, "건", late ? "재투입이 앞 시험보다 먼저 시작합니다" : "재투입 순서 이상 없음")
+        `종료 주차 경과 · 일정 미정 ${tests.length - scheduled.length}건${late ? ` · 재투입 순서 이상 ${late}건` : ""}`),
+      card("투입 샘플", inRows.length ? inRows[0].n.toLocaleString("ko-KR") : 0, inRows.length ? inRows[0].l.ko : "",
+        spread(inRows, "다른 레벨 없음")),
+      card("미배정 샘플", unRows.length ? unRows[0].n.toLocaleString("ko-KR") : 0, unRows.length ? unRows[0].l.ko : "",
+        unRows.length ? spread(unRows, "시험 후 처리 모두 배정됨") : "시험 후 처리 모두 배정됨")
     ].join("");
     return;
   }
@@ -1943,8 +2104,13 @@ function renderKpis(){
   const L = LENS_BY_ID[view.lens];
   if(L && L.level){
     const mine = tests.filter(t => t.level === L.level);
-    const need = mine.reduce((s, t) => s + t.fresh, 0);
-    const dated = mine.filter(t => t.when).sort((a, b) => a.when.s0 - b.when.s0);
+    const D = view.demand || { need:{}, direct:{}, fromAbove:{} };
+    const rolled = D.need[L.level] || 0;
+    // 우리 물건이 필요해지는 첫 시점 — 우리 시험만이 아니라 상위 레벨 시험도 우리를 먹는다
+    const myIdx = LEVELS.findIndex(l => l.id === L.level);
+    // 관점이 걸려 걸러진 뒤가 아니라 전체 시험에서 본다 — 우리를 먹는 상위 시험이 진짜 납기를 정한다
+    const consumers = model.tests.filter(t => t.when && t.level && LEVELS.findIndex(l => l.id === t.level) >= myIdx);
+    const dated = consumers.sort((a, b) => a.when.s0 - b.when.s0);
     const first = dated[0];
     const handOff = view.reuses.filter(r => r.src && r.src.level === L.level && r.dst);
     const handQty = handOff.reduce((s, r) => s + r.qty, 0);
@@ -1959,25 +2125,28 @@ function renderKpis(){
     host.innerHTML = [
       card("보유 품목", items.length, "종", `본품 ${mainItems.length} · 추가 ${items.length - mainItems.length}`,
         `<div class="meter">${meter}</div>`),
-      card("총 수량", totalQty.toLocaleString("ko-KR"), "ea", `본품 출하 ${rate}% · ${shipped}/${mainItems.length}`),
+      card("본품 수량", mainItems.reduce((s, i) => s + i.qty, 0).toLocaleString("ko-KR"), LEVEL_BY_ID[L.level].ko,
+        `본품 출하 ${rate}% · ${shipped}/${mainItems.length}` +
+        (items.length - mainItems.length ? ` · 추가구성품 ${items.filter(i => i.kind === "addon").reduce((s, i) => s + i.qty, 0).toLocaleString("ko-KR")}` : "")),
       card("첫 납기", first ? fmtWeek(first.when.start) : "—", "",
-        first ? `${first.qty}ea · ${clip(first.name, 14)}` : "일정이 잡힌 시험이 없습니다"),
-      card("준비할 수량", need.toLocaleString("ko-KR"), "ea", `${mine.length}개 시험에 새로 투입`),
+        first ? `${clip(first.name, 16)} ${first.qty}` : "일정이 잡힌 시험이 없습니다"),
+      card("시험 소요량", rolled.toLocaleString("ko-KR"), "",
+        `직접 ${(D.direct[L.level] || 0).toLocaleString("ko-KR")} + 상위 조립 ${(D.fromAbove[L.level] || 0).toLocaleString("ko-KR")}`),
       card("다음 시험 이관", handQty, "ea",
         handOff.length ? handOff.map(r => clip(r.purpose, 12)).join(" · ") : "이관 예정 없음"),
-      card("일정 미정", mine.length - dated.length, "건", `우리 레벨 시험 ${mine.length}건 중`)
+      card("일정 미정", mine.length - mine.filter(t => t.when).length, "건", `우리 레벨 시험 ${mine.length}건 중`)
     ].join("");
     return;
   }
 
   /* 전체 */
+  // 레벨마다 단위가 다르므로 비율은 수량이 아니라 건수로 센다
   const improved = items.filter(i => i.version !== "v1");
-  const impQty = improved.reduce((s, i) => s + i.qty, 0);
-  const impRate = totalQty ? Math.round(impQty / totalQty * 100) : 0;
+  const impRate = items.length ? Math.round(improved.length / items.length * 100) : 0;
   const done = tests.filter(t => t.result === "합격" || t.result === "불합격");
   const pass = tests.filter(t => t.result === "합격").length;
-  const reuseQty = view.reuses.reduce((s, r) => s + r.qty, 0);
-  const reuseRate = testQty ? Math.round(reuseQty / testQty * 100) : 0;
+  const settled = tests.filter(t => t.unassigned === 0).length;
+  const settleRate = tests.length ? Math.round(settled / tests.length * 100) : 0;
   const buckets = STAGES.map((_, i) => items.filter(it => it.stage === i).length);
   const segTotal = Math.max(1, items.length);
   const meter = [
@@ -1989,11 +2158,15 @@ function renderKpis(){
   host.innerHTML = [
     card("등록 품목", items.length, "종", `본품 ${mainItems.length} · 추가 ${items.length - mainItems.length}`,
       `<div class="meter">${meter}</div>`),
-    card("총 수량", totalQty.toLocaleString("ko-KR"), "ea", `레벨 ${new Set(items.map(i => i.level)).size}개 구간`),
+    (() => {
+      const rows = perLevel(id => items.filter(i => i.level === id && i.kind === "main").reduce((s, i) => s + i.qty, 0));
+      return card("본품 수량", rows.length ? rows[0].n.toLocaleString("ko-KR") : 0, rows.length ? rows[0].l.ko : "",
+        spread(rows, "레벨 하나"));
+    })(),
     card("본품 출하", rate, "%", `${shipped} / ${mainItems.length} 본품`),
-    card("개선품 비중", impRate, "%", `v2 이상 ${improved.length}종 · ${impQty.toLocaleString("ko-KR")}ea`),
+    card("개선품 비중", impRate, "%", `v2 이상 ${improved.length} / ${items.length}종`),
     card("시험", tests.length, "건", `판정 완료 ${done.length} · 합격 ${pass}`),
-    card("재활용 확정", reuseRate, "%", `${reuseQty} / ${testQty}ea · ${new Set(view.reuses.map(r => r.purpose)).size}개 용도`)
+    card("시험 후 처리", settleRate, "%", `${settled} / ${tests.length}건 배정 완료 · ${new Set(view.reuses.map(r => r.purpose)).size}개 용도`)
   ].join("");
 }
 
@@ -2336,6 +2509,7 @@ function stamp(){
 function toCSV(){
   const q = s => `"${String(s ?? "").replace(/"/g, '""')}"`;
   const rows = [["종류", "레벨", "품목명", "버전", "수량", "단계", "비고"]];
+  model.boms.forEach(b => rows.push(["구성", LEVEL_BY_ID[b.parent].ko, (b.kind === "level" ? "" : "+ ") + b.childName, "", b.per, "", b.note]));
   model.items.forEach(i => rows.push(["품목", LEVEL_BY_ID[i.level].ko, (i.kind === "addon" ? "+ " : "") + i.name, i.version, i.qty, formatStageChain(i), i.note]));
   model.tests.forEach(t => rows.push(["시험", t.targetRaw, t.name, "", t.qty, t.result, [t.date, t.note].filter(Boolean).join(" ")]));
   model.reuses.forEach(r => rows.push(["재활용", "", r.purpose, "", r.qty, r.from, r.note]));
@@ -2358,16 +2532,17 @@ function fromCSV(text){
   }
   if(val || cur.length){ cur.push(val); rows.push(cur); }
 
-  const out = { item:[], test:[], reuse:[] };
+  const out = { bom:[], item:[], test:[], reuse:[] };
   rows.forEach((r, idx) => {
     if(!r.length || r.every(c => !c.trim())) return;
     const kind = (r[0] || "").trim();
     if(idx === 0 && /종류|type/i.test(kind)) return;
-    if(kind === "시험") out.test.push([r[2], r[1], r[4], (r[6] || "").split(" ")[0], r[5], (r[6] || "").split(" ").slice(1).join(" ")].map(x => (x || "").trim()).join(" | "));
+    if(kind === "구성") out.bom.push([r[1], r[2], r[4], r[6]].map(x => (x || "").trim()).join(" | "));
+    else if(kind === "시험") out.test.push([r[2], r[1], r[4], (r[6] || "").split(" ")[0], r[5], (r[6] || "").split(" ").slice(1).join(" ")].map(x => (x || "").trim()).join(" | "));
     else if(kind === "재활용") out.reuse.push([r[2], r[5], r[4], r[6]].map(x => (x || "").trim()).join(" | "));
     else out.item.push([r[1], r[2], r[3], r[4], r[5], r[6]].map(x => (x || "").trim()).join(" | "));
   });
-  return ["[품목]", ...out.item, "", "[시험]", ...out.test, "", "[재활용]", ...out.reuse, ""].join("\n");
+  return ["[구성]", ...out.bom, "", "[품목]", ...out.item, "", "[시험]", ...out.test, "", "[재활용]", ...out.reuse, ""].join("\n");
 }
 function fromJSON(text){
   const j = JSON.parse(text);
@@ -2382,10 +2557,15 @@ function fromJSON(text){
     name:t.name || "이름 없음", targetRaw:t.target || t.targetRaw || "",
     qty: toInt(t.qty, 1), date:t.date || "", result:RESULTS.includes(t.result) ? t.result : "대기", note:t.note || ""
   }));
+  const boms = (j.boms || j.bom || []).map(b => formatBom({
+    parent: normalizeLevel(b.parent) || b.parent,
+    kind: b.kind === "level" ? "level" : (normalizeLevel(b.child) ? "level" : "part"),
+    childName: b.child || "", per: toInt(b.per, 1), note: b.note || ""
+  }));
   const reuses = (j.reuses || j.reuse || []).map(r => formatReuse({
     purpose:r.purpose || "용도 미정", from:r.from || "", qty:toInt(r.qty, 1), note:r.note || ""
   }));
-  return ["[품목]", ...items, "", "[시험]", ...tests, "", "[재활용]", ...reuses, ""].join("\n");
+  return ["[구성]", ...boms, "", "[품목]", ...items, "", "[시험]", ...tests, "", "[재활용]", ...reuses, ""].join("\n");
 }
 function loadFile(file){
   const reader = new FileReader();
@@ -2421,6 +2601,7 @@ $("#btn-exp-txt").addEventListener("click", () => download(`샘플플로우_${st
 $("#btn-exp-csv").addEventListener("click", () => download(`샘플플로우_${stamp()}.csv`, "text/csv", toCSV()));
 $("#btn-exp-json").addEventListener("click", () => {
   const out = {
+    boms: model.boms.map(b => ({ parent:b.parent, child:b.childName, kind:b.kind, per:b.per, note:b.note })),
     items: model.items.map(i => ({ level:i.level, kind:i.kind, name:i.name, version:i.version, qty:i.qty, stage:formatStageChain(i), note:i.note })),
     tests: model.tests.map(t => ({ name:t.name, target:t.targetRaw, qty:t.qty, date:t.date, result:t.result, note:t.note })),
     reuses: model.reuses.map(r => ({ purpose:r.purpose, from:r.from, qty:r.qty, note:r.note }))
