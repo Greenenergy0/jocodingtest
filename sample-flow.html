@@ -260,7 +260,7 @@ textarea#dsl::placeholder{color:var(--idle);}
 /* 표 편집 */
 .table-scroll{overflow-x:auto;max-height:520px;overflow-y:auto;border:1px solid var(--line);border-radius:9px;}
 /* 칸이 좁아 글씨가 잘리느니 표째로 옆으로 밀리게 둔다 */
-table.grid{border-collapse:collapse;width:100%;min-width:568px;font-size:12px;table-layout:fixed;}
+table.grid{border-collapse:collapse;width:100%;min-width:682px;font-size:12px;table-layout:fixed;}
 table.grid th{
   position:sticky;top:0;z-index:1;background:var(--surface-2);
   text-align:left;font-size:10.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;
@@ -297,6 +297,9 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
 .seg.lens{flex:none;background:var(--surface);box-shadow:var(--shadow);}
 .seg.lens button{padding:6px 13px;font-size:12px;}
 .lens-hint{font-size:11.5px;color:var(--muted);min-width:0;flex:1 1 240px;}
+.canvas-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 14px 2px;}
+.seg.mini{flex:none;}
+.seg.mini button{padding:5px 12px;font-size:11.5px;}
 
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:14px;}
 .kpi{
@@ -324,6 +327,8 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
 .legend .lg{display:inline-flex;align-items:center;gap:6px;}
 .legend .dot{width:9px;height:9px;border-radius:50%;flex:none;}
 .legend .ring{width:9px;height:9px;border-radius:50%;border:2px solid var(--line-2);background:var(--surface);flex:none;box-sizing:border-box;}
+/* 점선 원은 작은 크기에서 뭉개져 보이므로 조금 키우고 점으로 끊는다 */
+.legend .ring.plan{width:11px;height:11px;border:2px dotted var(--accent);}
 .legend .dash{width:16px;height:0;border-top:2px dashed var(--line-2);flex:none;}
 
 .empty{
@@ -411,6 +416,8 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
             <dt>추가구성품</dt><dd>품목명 앞에 <code>+</code> — 예: <code>+ 냉각 플레이트</code></dd>
             <dt>버전</dt><dd><code>v1</code> <code>v2</code> … 생략하면 v1</dd>
             <dt>단계</dt><dd><code>생산</code> <code>입고</code> <code>조립</code> <code>출하</code> · 뒤에 <code>중</code>을 붙이면 진행 중 (<code>조립중</code>)</dd>
+            <dt>단계 이력</dt><dd><code>&gt;</code> 로 이어 붙이고 주차를 적을 수 있습니다 — <code>생산 26W12 &gt; 입고 26W14 &gt; 조립중</code>. 주차축 화면은 이걸로 그려집니다</dd>
+            <dt>예정</dt><dd>아직 오지 않은 주차의 단계는 계획으로 보고 실적에서 뺍니다</dd>
             <dt>[시험]</dt><dd>시험명 | 대상 | 수량 | 일정 | 결과(<code>대기</code>/<code>진행중</code>/<code>합격</code>/<code>불합격</code>) | 비고</dd>
             <dt>일정</dt><dd>주차로 <code>26W07</code>, 기간이면 <code>26W07~26W10</code> · <code>2026-03-05</code> 로 적어도 주차로 바꿔 받습니다</dd>
             <dt>[재활용]</dt><dd>용도 | 출처 시험명 | 수량 | 비고</dd>
@@ -451,13 +458,16 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
           <div class="field"><label for="q-qty">수량</label>
             <input id="q-qty" type="number" min="1" step="1" value="1">
           </div>
-          <div class="field wide"><label for="q-stage">진행 단계</label>
+          <div class="field"><label for="q-stage">진행 단계</label>
             <select id="q-stage">
               <option value="생산중">생산 중</option><option value="생산">생산 완료</option>
               <option value="입고중">입고 중</option><option value="입고">입고 완료</option>
               <option value="조립중">조립 중</option><option value="조립">조립 완료</option>
               <option value="출하중">출하 중</option><option value="출하">출하 완료</option>
             </select>
+          </div>
+          <div class="field"><label for="q-week">그 단계의 주차</label>
+            <input id="q-week" type="text" class="mono" placeholder="26W12 (선택)" autocomplete="off">
           </div>
           <div class="field wide"><label for="q-note">비고</label>
             <input id="q-note" type="text" placeholder="선택 입력">
@@ -551,10 +561,18 @@ table.grid td.num input{text-align:right;font-variant-numeric:tabular-nums;}
         </div>
 
         <div class="tabpanel" role="tabpanel" id="pv-flow" aria-labelledby="v-flow" style="padding:0;">
+          <div class="canvas-bar">
+            <div class="seg mini" id="axis-seg" role="group" aria-label="가로축">
+              <button type="button" data-axis="stage" aria-pressed="true">단계축</button>
+              <button type="button" data-axis="date" aria-pressed="false">주차축</button>
+            </div>
+            <span class="lens-hint" id="axis-hint"></span>
+          </div>
           <div class="canvas" id="canvas-flow"></div>
           <div class="legend">
             <span class="lg"><span class="dot" style="background:var(--ok)"></span>단계 완료</span>
             <span class="lg"><span class="ring" style="border-color:var(--warn)"></span>진행 중</span>
+            <span class="lg"><span class="ring plan"></span>예정</span>
             <span class="lg"><span class="ring"></span>미도달</span>
             <span class="lg"><span class="dash"></span>추가구성품</span>
             <span class="lg" style="margin-left:auto;">색이 진해질수록 상위 레벨 — 셀 → 팩 → 랙 → 링크</span>
@@ -693,23 +711,24 @@ const PRESET = (() => {
 # 품목명 앞의 + 는 추가구성품, 단계 뒤의 '중'은 진행 중
 
 [품목]
-셀 | 각형 LFP 100Ah | v1 | 320 | 출하 | 초도 물량
-셀 | 각형 LFP 100Ah | v2 | 160 | 조립 | 벤트 개구 면적 확대
-셀 | + 셀 홀더 | v1 | 80 | 입고 |
-셀 | + 절연 필름 | v2 | 80 | 입고 | 두께 0.25 → 0.30t
-팩 | 1P16S 모듈 | v1 | 20 | 출하 |
-팩 | 1P16S 모듈 | v2 | 10 | 조립중 | 버스바 용접 조건 변경
-팩 | + 모듈 BMS(BMU) | v2 | 30 | 입고 | 셀 전압 채널 확장
-팩 | + 냉각 플레이트 | v1 | 30 | 조립 |
-팩 | + 압축 패드 | v1 | 60 | 입고 |
-랙 | 8모듈 랙 | v1 | 4 | 출하 |
-랙 | 8모듈 랙 | v2 | 2 | 조립중 | 격벽 재질 변경
-랙 | + 랙 BMS(RMU) | v2 | 6 | 입고 |
-랙 | + 고전압 커넥터 | v1 | 12 | 조립 |
-랙 | + 소화 노즐 | v1 | 6 | 생산중 | 협력사 제작
-링크 | 4랙 뱅크 | v1 | 1 | 조립 |
-링크 | + 링크 BMS(SMU) | v1 | 2 | 입고 |
-링크 | + 파워 케이블 세트 | v1 | 2 | 조립 |
+# 단계는 > 로 이어 붙이고 주차를 적을 수 있다. 한 단계만 적어도 된다.
+셀 | 각형 LFP 100Ah | v1 | 320 | 생산 ${wk(-22)} > 입고 ${wk(-20)} > 조립 ${wk(-18)} > 출하 ${wk(-17)} | 초도 물량
+셀 | 각형 LFP 100Ah | v2 | 160 | 생산 ${wk(-11)} > 입고 ${wk(-9)} > 조립 ${wk(-7)} | 벤트 개구 면적 확대
+셀 | + 셀 홀더 | v1 | 80 | 생산 ${wk(-21)} > 입고 ${wk(-19)} |
+셀 | + 절연 필름 | v2 | 80 | 생산 ${wk(-10)} > 입고 ${wk(-8)} | 두께 0.25 → 0.30t
+팩 | 1P16S 모듈 | v1 | 20 | 생산 ${wk(-16)} > 입고 ${wk(-14)} > 조립 ${wk(-12)} > 출하 ${wk(-11)} |
+팩 | 1P16S 모듈 | v2 | 10 | 생산 ${wk(-6)} > 입고 ${wk(-4)} > 조립중 ${wk(-1)} | 버스바 용접 조건 변경
+팩 | + 모듈 BMS(BMU) | v2 | 30 | 생산 ${wk(-7)} > 입고 ${wk(-5)} | 셀 전압 채널 확장
+팩 | + 냉각 플레이트 | v1 | 30 | 생산 ${wk(-15)} > 입고 ${wk(-13)} > 조립 ${wk(-12)} |
+팩 | + 압축 패드 | v1 | 60 | 입고 | 주차 미정
+랙 | 8모듈 랙 | v1 | 4 | 생산 ${wk(-10)} > 입고 ${wk(-8)} > 조립 ${wk(-6)} > 출하 ${wk(-5)} |
+랙 | 8모듈 랙 | v2 | 2 | 생산 ${wk(-3)} > 입고 ${wk(-1)} > 조립중 | 격벽 재질 변경
+랙 | + 랙 BMS(RMU) | v2 | 6 | 생산 ${wk(-4)} > 입고 ${wk(-2)} |
+랙 | + 고전압 커넥터 | v1 | 12 | 생산 ${wk(-9)} > 입고 ${wk(-7)} > 조립 ${wk(-6)} |
+랙 | + 소화 노즐 | v1 | 6 | 생산중 | 협력사 제작, 주차 미정
+링크 | 4랙 뱅크 | v1 | 1 | 생산 ${wk(-1)} > 입고 ${wk(2)} > 조립 ${wk(4)} | 입고부터는 계획
+링크 | + 링크 BMS(SMU) | v1 | 2 | 생산 ${wk(0)} > 입고 ${wk(2)} |
+링크 | + 파워 케이블 세트 | v1 | 2 | 생산 ${wk(0)} > 입고 ${wk(2)} > 조립 ${wk(4)} |
 
 [시험]
 # 시험명 | 대상 | 수량 | 일정 | 결과 | 비고
@@ -752,6 +771,54 @@ function stageLabel(index, state){
   if(index < 0) return "대기";
   return STAGES[index].ko + (state === "wip" ? "중" : "");
 }
+
+/* 단계 칸은 한 단계만 적어도 되고, 화살표로 이어 붙여 주차까지 적어도 된다.
+   "조립중" 과 "생산 26W12 > 입고 26W14 > 조립중" 이 모두 유효하다 —
+   앞의 표기는 뒤 표기의 부분집합이라 이미 쓴 내용은 그대로 산다. */
+function parseStageChain(raw){
+  const s = String(raw ?? "").trim();
+  if(!s || /^(대기|미착수|예정)$/.test(s)) return { ok:true, steps:[] };
+  const segs = s.split(/\s*[>＞→»]\s*/).map(x => x.trim()).filter(Boolean);
+  const steps = [];
+  for(const seg of segs){
+    const m = seg.match(/^(\S+)(?:\s+(.+))?$/);
+    if(!m) return { ok:false, why:seg };
+    const st = normalizeStage(m[1]);
+    if(st === null || st.index < 0) return { ok:false, why:m[1] };
+    let when = null;
+    if(m[2]){
+      const sch = parseSchedule(m[2]);
+      if(!sch.ok) return { ok:false, why:m[2] };
+      when = sch.when;
+    }
+    steps.push({ stage:st.index, state:st.state, when });
+  }
+  for(let i = 1; i < steps.length; i++){
+    if(steps[i].stage <= steps[i - 1].stage) return { ok:false, order:true };
+  }
+  // 마지막이 아닌 단계는 이미 지나온 것으로 본다
+  steps.forEach((st, i) => { if(i < steps.length - 1) st.state = "done"; });
+  return { ok:true, steps };
+}
+
+/* 아직 오지 않은 주차에 걸린 단계는 '예정'이다. 계획을 실적으로 세면
+   출하율 같은 숫자가 부풀기 때문에 도달 단계는 예정을 빼고 잡는다. */
+function settleSteps(steps){
+  const now = nowSerial();
+  let stage = -1, state = "idle";
+  steps.forEach(st => {
+    st.phase = (st.when && st.when.s0 > now) ? "plan" : st.state;
+    if(st.phase !== "plan"){ stage = st.stage; state = st.phase; }
+  });
+  return { stage, state };
+}
+function formatStageChain(it){
+  if(!it.steps || !it.steps.length) return "대기";
+  return it.steps
+    .map(s => STAGES[s.stage].ko + (s.state === "wip" ? "중" : "") + (s.when ? " " + fmtSchedule(s.when) : ""))
+    .join(" > ");
+}
+function stepDates(it){ return (it.steps || []).filter(s => s.when); }
 function normalizeLevel(raw){
   const s = (raw || "").trim().toLowerCase();
   const hit = LEVELS.find(l => l.alias.some(a => a.toLowerCase() === s));
@@ -809,16 +876,20 @@ function parse(text){
       }
       let kind = "main";
       if(/^[+＋]/.test(name)){ kind = "addon"; name = name.replace(/^[+＋]\s*/, ""); }
-      const st = normalizeStage(f[4]);
-      if(st === null){
-        model.errors.push({ line:i + 1, msg:`단계 "${f[4]}" 를 모릅니다. 생산 · 입고 · 조립 · 출하 (뒤에 '중' 가능) 로 적어 주세요.` });
+      const ch = parseStageChain(f[4]);
+      if(!ch.ok){
+        model.errors.push({ line:i + 1, msg: ch.order
+          ? "단계는 생산 → 입고 → 조립 → 출하 순서대로, 겹치지 않게 적어 주세요."
+          : `단계 "${ch.why}" 를 모릅니다. 생산 · 입고 · 조립 · 출하 (뒤에 '중' 가능), 주차는 26W12 처럼 붙여 주세요.` });
         return;
       }
+      const cur = settleSteps(ch.steps);
       model.items.push({
         row:i, level, kind, name,
         version: normalizeVersion(f[2]),
         qty: toInt(f[3], 1),
-        stage: st.index, state: st.state,
+        steps: ch.steps,
+        stage: cur.stage, state: cur.state,
         note: f.slice(5).join(" | ").trim()
       });
       return;
@@ -937,7 +1008,7 @@ function formatItem(it){
     (it.kind === "addon" ? "+ " : "") + it.name,
     it.version,
     String(it.qty),
-    stageLabel(it.stage, it.state),
+    it.stageText != null ? it.stageText : formatStageChain(it),
     it.note || ""
   ].join(" | ").replace(/\s*\|\s*$/, " |");
 }
@@ -995,6 +1066,12 @@ const dsl = $("#dsl");
 let model = { items:[], tests:[], reuses:[], errors:[] };
 let view = model;   // 관점이 걸린 뒤의 데이터 — 그림은 이걸 그린다
 let lens = "all";
+let flowAxis = "stage";  // 공정 플로우의 가로축: 단계 순서 또는 주차
+const AXIS_KEY = "sample-flow-board:axis";
+const AXIS_HINT = {
+  stage: "모든 품목을 같은 네 칸에 세워 «어디까지 왔나»를 봅니다. 주차를 적어 두면 정거장 아래에 함께 표시됩니다.",
+  date: "실제 주차에 맞춰 늘어놓아 «언제, 얼마나 걸리나»를 봅니다. 상위 레벨일수록 오른쪽으로 밀립니다."
+};
 
 /* 관점(렌즈) — 팀마다 봐야 하는 게 다르다.
    레벨 팀은 "우리 샘플을 언제 몇 개 준비해 어디로 보내나",
@@ -1102,6 +1179,37 @@ function emptyState(title, body){
   return `<div class="empty"><h3>${esc(title)}</h3><p>${esc(body)}</p></div>`;
 }
 
+/* 주차 눈금 — 계보 뷰와 날짜축 플로우가 같은 자를 쓴다 */
+function drawWeekAxis(out, T, c){
+  const bounds = [];
+  let cur = null;
+  for(let s = c.minS; s <= c.maxS + 1; s++){
+    const d = mondayFromSerial(s);
+    const key = d.getUTCFullYear() + "-" + d.getUTCMonth();
+    if(key !== cur){ bounds.push({ s, label:(d.getUTCMonth() + 1) + "월" }); cur = key; }
+  }
+  bounds.forEach((bd, i) => {
+    const x1 = c.xOf(bd.s);
+    const x2 = i + 1 < bounds.length ? c.xOf(bounds[i + 1].s) : c.xOf(c.maxS + 1);
+    if(i % 2 === 1) out.push(`<rect x="${x1}" y="${c.top}" width="${x2 - x1}" height="${c.bottom - c.top}" fill="${T.band}"/>`);
+    out.push(`<line x1="${x1}" y1="${c.top}" x2="${x1}" y2="${c.bottom}" stroke="${T.line}" stroke-width="1"/>`);
+    if(x2 - x1 > 26) out.push(`<text x="${x1 + 5}" y="${c.monthY}" font-size="11.5" font-weight="650" fill="${T.ink2}">${esc(bd.label)}</text>`);
+  });
+  const step = Math.max(1, Math.ceil(36 / c.ppw));
+  for(let s = c.minS; s <= c.maxS; s += step){
+    const d = mondayFromSerial(s);
+    const p = isoWeekOf(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+    out.push(`<text x="${c.xOf(s) + c.ppw / 2}" y="${c.weekY}" text-anchor="middle" font-size="10" fill="${T.muted}" font-family='${MONO}'>W${String(p.w).padStart(2, "0")}</text>`);
+  }
+}
+function drawNowLine(out, T, c){
+  const now = nowSerial();
+  if(now < c.minS || now > c.maxS) return;
+  const nx = c.xOf(now) + c.ppw / 2;
+  out.push(`<line x1="${nx}" y1="${c.top}" x2="${nx}" y2="${c.bottom}" stroke="${T.crit}" stroke-width="1.4" stroke-dasharray="4 3" opacity=".75"/>`);
+  out.push(`<text x="${nx + 5}" y="${c.labelY}" font-size="10" font-weight="650" fill="${T.crit}">이번 주</text>`);
+}
+
 /* ============================================================
    1) 공정 플로우 — 레인 = 레벨, 트랙 = 품목, 정거장 = 단계
    ============================================================ */
@@ -1112,10 +1220,15 @@ function renderFlow(){
       "왼쪽 텍스트 탭에서 «예시 데이터» 를 눌러 보거나, 한 줄 추가 탭에서 품목을 넣어 보세요.");
     return;
   }
-  const T = tokens();
+  host.innerHTML = flowAxis === "date" ? renderFlowDate(tokens()) : renderFlowStage(tokens());
+}
 
+/* 가로축이 단계 — 모든 품목이 같은 네 칸에 정렬되니 "어디까지 왔나"가 세로로 읽힌다 */
+function renderFlowStage(T){
   const PAD = 16, LABEL_W = 272, COL_W = 128, TEST_W = 156;
-  const HEAD_H = 52, ROW_H = 29, LANE_HEAD_H = 27, LANE_GAP = 38;
+  // 주차가 하나라도 적혀 있으면 정거장 아래에 붙일 자리를 만든다
+  const anyDates = view.items.some(it => stepDates(it).length);
+  const HEAD_H = 52, ROW_H = anyDates ? 38 : 29, LANE_HEAD_H = 27, LANE_GAP = 38;
   const x0 = PAD + LABEL_W;
   const colX = i => x0 + COL_W * (i + 0.5);
   const testX = x0 + COL_W * STAGES.length + TEST_W / 2;
@@ -1228,15 +1341,26 @@ function renderFlow(){
         }
       }
       // 정거장
+      const stepAt = i => (r.steps || []).find(s => s.stage === i);
       STAGES.forEach((_, i) => {
         const cx = colX(i), rad = isAddon ? 4 : 5.2;
-        if(r.stage > i || (r.stage === i && r.state === "done")){
+        const st = stepAt(i);
+        const phase = st ? st.phase : null;
+        if(phase === "done"){
           p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${c}"/>`);
-        }else if(r.stage === i){
+        }else if(phase === "wip"){
           p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${T.surface}" stroke="${T.warn}" stroke-width="2.2"/>`);
           p.push(`<circle cx="${cx}" cy="${cy}" r="1.7" fill="${T.warn}"/>`);
+        }else if(phase === "plan"){
+          // 아직 오지 않은 주차 — 계획이지 실적이 아니다
+          p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${T.surface}" stroke="${c}" stroke-width="1.6" stroke-dasharray="2.2 2"/>`);
+        }else if(r.stage > i){
+          p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${c}"/>`);
         }else{
           p.push(`<circle cx="${cx}" cy="${cy}" r="${rad - 1.2}" fill="${T.surface}" stroke="${T.line2}" stroke-width="1.5"/>`);
+        }
+        if(anyDates && st && st.when){
+          p.push(`<text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="9" fill="${phase === "plan" ? T.muted : T.ink2}" font-family='${MONO}'>${esc(fmtWeek(st.when.start))}</text>`);
         }
       });
 
@@ -1244,7 +1368,7 @@ function renderFlow(){
       const named = namedTests(r);
       if(named.length) p.push(testChip(cy, named));
 
-      const tip = `${LEVEL_BY_ID[r.level].ko} · ${r.kind === "addon" ? "추가구성품" : "본품"} · ${r.name} ${r.version} · ${r.qty}ea · ${stageLabel(r.stage, r.state)}${r.note ? " · " + r.note : ""}`;
+      const tip = `${LEVEL_BY_ID[r.level].ko} · ${r.kind === "addon" ? "추가구성품" : "본품"} · ${r.name} ${r.version} · ${r.qty}ea · ${formatStageChain(r)}${r.note ? " · " + r.note : ""}`;
       p.push(`<rect x="${PAD}" y="${cy - ROW_H / 2}" width="${W - PAD * 2}" height="${ROW_H}" fill="transparent"><title>${esc(tip)}</title></rect>`);
     });
 
@@ -1258,7 +1382,148 @@ function renderFlow(){
   });
 
   p.push("</svg>");
-  host.innerHTML = p.join("");
+  return p.join("");
+}
+
+/* 가로축이 주차 — 리드타임과 지연, 그리고 셀에서 링크로 갈수록
+   오른쪽으로 밀리는 계단이 그림 자체로 보인다 */
+function renderFlowDate(T){
+  const withDates = view.items.filter(it => stepDates(it).length);
+  if(!withDates.length){
+    return emptyState("주차가 적힌 품목이 없습니다",
+      "단계 칸에 «생산 26W12 > 입고 26W14 > 조립중» 처럼 주차를 붙이면 이 화면이 그려집니다. 한 단계만 적어도 됩니다.");
+  }
+
+  const PAD = 16, LABEL_W = 272, ROW_H = 32, LANE_HEAD_H = 27, LANE_GAP = 22, HEAD_H = 60;
+  const W = 1080;
+  const axisX = PAD + LABEL_W;
+  const axisW = W - PAD - axisX;
+
+  let minS = Infinity, maxS = -Infinity;
+  withDates.forEach(it => stepDates(it).forEach(s => {
+    minS = Math.min(minS, s.when.s0);
+    maxS = Math.max(maxS, s.when.s1);
+  }));
+  minS -= 1; maxS += 1;
+  const ppw = axisW / (maxS - minS + 1);
+  const xOf = s => axisX + (s - minS) * ppw;
+
+  const lanes = LEVELS
+    .map(l => ({
+      ...l,
+      rows: view.items.filter(it => it.level === l.id).sort((a, b) => {
+        const ad = stepDates(a), bd = stepDates(b);
+        const as = ad.length ? ad[0].when.s0 : Infinity, bs = bd.length ? bd[0].when.s0 : Infinity;
+        return as - bs || (a.kind === b.kind ? 0 : a.kind === "main" ? -1 : 1) || a.name.localeCompare(b.name, "ko");
+      })
+    }))
+    .filter(l => l.rows.length);
+
+  // 시험 이름표를 먼저 배치한다 — 시작 주차가 붙어 있으면 아랫줄로 내려 겹치지 않게
+  const CHIP_H = 15;
+  lanes.forEach(lane => {
+    const placed = [];
+    view.tests
+      .filter(t => t.level === lane.id && t.when)
+      .sort((a, b) => a.when.s0 - b.when.s0)
+      .forEach(t => {
+        const lab = clipW(`${t.name} ${t.qty}ea`, 150, 9.5);
+        const lw = textW(lab, 9.5) + 12;
+        const tx = xOf(t.when.s0);
+        const bx = Math.max(axisX, Math.min(tx + 4, W - PAD - lw));
+        let line = 0;
+        while(placed.some(q => q.line === line && bx < q.x2 + 5 && bx + lw > q.x1 - 5)) line++;
+        placed.push({ t, tx, lab, lw, bx, x1:bx, x2:bx + lw, line });
+      });
+    lane.chips = placed;
+    lane.headH = LANE_HEAD_H + (placed.length ? Math.max(...placed.map(q => q.line)) * CHIP_H : 0);
+  });
+
+  let y = HEAD_H;
+  const laneBox = [];
+  lanes.forEach((lane, li) => {
+    const top = y;
+    y += lane.headH;
+    lane.rows.forEach(r => { r._y = y + ROW_H / 2; y += ROW_H; });
+    laneBox.push({ lane, top, bottom:y });
+    if(li < lanes.length - 1) y += LANE_GAP;
+  });
+  const H = y + 16;
+
+  const p = [];
+  p.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="주차별 공정 진행 플로우" font-family='${FONT}'>`);
+  p.push(`<defs><marker id="d-ah" viewBox="0 0 8 8" refX="6.5" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto">
+    <path d="M0 0.6 L7.5 4 L0 7.4 z" fill="${T.test}"/></marker></defs>`);
+  p.push(`<rect width="${W}" height="${H}" fill="${T.surface}"/>`);
+
+  const cfg = { xOf, minS, maxS, ppw, top:HEAD_H - 22, bottom:H - 10, monthY:20, weekY:37, labelY:HEAD_H - 10 };
+  drawWeekAxis(p, T, cfg);
+  p.push(`<text x="${PAD}" y="20" font-size="12.5" font-weight="650" fill="${T.ink}">품목</text>`);
+  p.push(`<text x="${PAD}" y="37" font-size="10.5" fill="${T.muted}">주차가 적힌 ${withDates.length}종 / 전체 ${view.items.length}종</text>`);
+  p.push(`<line x1="${PAD}" y1="${HEAD_H - 22}" x2="${W - PAD}" y2="${HEAD_H - 22}" stroke="${T.line}" stroke-width="1"/>`);
+  drawNowLine(p, T, cfg);
+
+  laneBox.forEach(({ lane, top, bottom }) => {
+    const c = T.lv[lane.id];
+    const total = lane.rows.reduce((s, r) => s + r.qty, 0);
+    p.push(`<rect x="${PAD}" y="${top + 4}" width="3" height="${bottom - top - 6}" rx="1.5" fill="${c}"/>`);
+    p.push(`<text x="${PAD + 12}" y="${top + 17}" font-size="13" font-weight="680" fill="${c}">${esc(lane.ko)}</text>`);
+    p.push(`<text x="${PAD + 12 + textW(lane.ko, 13) + 9}" y="${top + 17}" font-size="10.5" fill="${T.muted}">${lane.rows.length}종 · ${total.toLocaleString("ko-KR")}ea</text>`);
+
+    // 이 레벨의 시험은 일정 위에 바로 꽂는다
+    lane.chips.forEach(q => {
+      const cyTop = top + 4 + q.line * CHIP_H;
+      p.push(`<line x1="${q.tx}" y1="${cyTop + 7}" x2="${q.tx}" y2="${bottom - 4}" stroke="${T.test}" stroke-width="1.2" stroke-dasharray="3 3" opacity=".5"/>`);
+      p.push(`<rect x="${q.bx}" y="${cyTop}" width="${q.lw}" height="14" rx="7" fill="${T.surface}" stroke="${T.test}" stroke-width="1"/>`);
+      p.push(`<text x="${q.bx + q.lw / 2}" y="${cyTop + 10.5}" text-anchor="middle" font-size="9.5" font-weight="650" fill="${T.test}">${esc(q.lab)}<title>${esc(`${q.t.name} · ${q.t.qty}ea · ${fmtSchedule(q.t.when)} · ${q.t.result}`)}</title></text>`);
+    });
+
+    lane.rows.forEach(r => {
+      const cy = r._y;
+      const isAddon = r.kind === "addon";
+      const indent = isAddon ? 20 : 8;
+      const vx = PAD + LABEL_W - 84;
+      const nameX = PAD + indent;
+      const label = (isAddon ? "└ " : "") + r.name;
+      p.push(`<text x="${nameX}" y="${cy + 4}" font-size="12" fill="${isAddon ? T.ink2 : T.ink}" font-weight="${isAddon ? 400 : 550}">${esc(clipW(label, vx - 9 - nameX, 12))}</text>`);
+      const vw = textW(r.version, 10) + 11;
+      const vHot = r.version !== "v1";
+      p.push(`<rect x="${vx}" y="${cy - 8}" width="${vw}" height="15" rx="7.5" fill="${vHot ? T.accent : "none"}" stroke="${vHot ? "none" : T.line2}"/>`);
+      p.push(`<text x="${vx + vw / 2}" y="${cy + 3.5}" text-anchor="middle" font-size="10" font-weight="700" fill="${vHot ? T.surface : T.muted}" font-family='${MONO}'>${esc(r.version)}</text>`);
+      p.push(`<text x="${PAD + LABEL_W - 14}" y="${cy + 4}" text-anchor="end" font-size="11.5" fill="${T.muted}" font-family='${MONO}'>${r.qty.toLocaleString("ko-KR")}</text>`);
+
+      const ds = stepDates(r);
+      if(!ds.length){
+        p.push(`<rect x="${axisX + 4}" y="${cy - 7}" width="72" height="14" rx="3.5" fill="none" stroke="${T.line2}" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+        p.push(`<text x="${axisX + 40}" y="${cy + 4}" text-anchor="middle" font-size="9.5" fill="${T.muted}">주차 미정</text>`);
+        return;
+      }
+
+      // 날짜가 적힌 단계끼리 이어 붙인다 — 선 길이가 곧 리드타임
+      for(let i = 0; i < ds.length - 1; i++){
+        const x1 = xOf(ds[i].when.s0) + ppw / 2, x2 = xOf(ds[i + 1].when.s0) + ppw / 2;
+        const planned = ds[i + 1].phase === "plan";
+        p.push(`<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="${c}" stroke-width="${isAddon ? 2 : 3}" stroke-linecap="round" ${planned ? 'stroke-dasharray="4 3" opacity=".5"' : ""}/>`);
+      }
+      ds.forEach(s => {
+        const cx = xOf(s.when.s0) + ppw / 2, rad = isAddon ? 4 : 5.2;
+        if(s.phase === "done"){
+          p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${c}"/>`);
+        }else if(s.phase === "wip"){
+          p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${T.surface}" stroke="${T.warn}" stroke-width="2.2"/>`);
+          p.push(`<circle cx="${cx}" cy="${cy}" r="1.7" fill="${T.warn}"/>`);
+        }else{
+          p.push(`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${T.surface}" stroke="${c}" stroke-width="1.6" stroke-dasharray="2.2 2"/>`);
+        }
+        p.push(`<text x="${cx}" y="${cy + 15}" text-anchor="middle" font-size="8.5" fill="${T.muted}">${esc(STAGES[s.stage].ko.slice(0, 1))}</text>`);
+      });
+
+      p.push(`<rect x="${PAD}" y="${cy - ROW_H / 2}" width="${W - PAD * 2}" height="${ROW_H}" fill="transparent"><title>${esc(`${LEVEL_BY_ID[r.level].ko} · ${r.name} ${r.version} · ${r.qty}ea · ${formatStageChain(r)}${r.note ? " · " + r.note : ""}`)}</title></rect>`);
+    });
+  });
+
+  p.push("</svg>");
+  return p.join("");
 }
 
 /* ============================================================
@@ -1331,26 +1596,8 @@ function renderGenealogy(){
   out.push(`<rect width="${W}" height="${H}" fill="${T.surface}"/>`);
 
   // 월 띠와 주차 눈금
-  if(hasAxis){
-    const bounds = [];
-    let cur = null;
-    for(let s = minS; s <= maxS + 1; s++){
-      const d = mondayFromSerial(s);
-      const key = d.getUTCFullYear() + "-" + d.getUTCMonth();
-      if(key !== cur){ bounds.push({ s, label:(d.getUTCMonth() + 1) + "월" }); cur = key; }
-    }
-    bounds.forEach((bd, i) => {
-      const x1 = xOf(bd.s), x2 = i + 1 < bounds.length ? xOf(bounds[i + 1].s) : xOf(maxS + 1);
-      if(i % 2 === 1) out.push(`<rect x="${x1}" y="${HEAD_H - 22}" width="${x2 - x1}" height="${H - HEAD_H + 8}" fill="${T.band}"/>`);
-      out.push(`<line x1="${x1}" y1="${HEAD_H - 22}" x2="${x1}" y2="${H - 12}" stroke="${T.line}" stroke-width="1"/>`);
-      if(x2 - x1 > 26) out.push(`<text x="${x1 + 5}" y="${20}" font-size="11.5" font-weight="650" fill="${T.ink2}">${esc(bd.label)}</text>`);
-    });
-    const step = Math.max(1, Math.ceil(36 / ppw));
-    for(let s = minS; s <= maxS; s += step){
-      const p = isoWeekOf(mondayFromSerial(s).getUTCFullYear(), mondayFromSerial(s).getUTCMonth() + 1, mondayFromSerial(s).getUTCDate());
-      out.push(`<text x="${xOf(s) + ppw / 2}" y="${37}" text-anchor="middle" font-size="10" fill="${T.muted}" font-family='${MONO}'>W${String(p.w).padStart(2, "0")}</text>`);
-    }
-  }
+  const axisCfg = { xOf, minS, maxS, ppw, top:HEAD_H - 22, bottom:H - 12, monthY:20, weekY:37, labelY:HEAD_H - 10 };
+  if(hasAxis) drawWeekAxis(out, T, axisCfg);
   out.push(`<text x="${PAD}" y="${20}" font-size="12.5" font-weight="650" fill="${T.ink}">시험</text>`);
   out.push(`<text x="${PAD}" y="${37}" font-size="10.5" fill="${T.muted}">${view.tests.length}건 · 투입 ${view.tests.reduce((s, t) => s + t.qty, 0)}ea</text>`);
   out.push(`<text x="${dispX}" y="${20}" font-size="12.5" font-weight="650" fill="${T.reuse}">시험 후 처리</text>`);
@@ -1358,15 +1605,7 @@ function renderGenealogy(){
   out.push(`<line x1="${PAD}" y1="${HEAD_H - 22}" x2="${W - PAD}" y2="${HEAD_H - 22}" stroke="${T.line}" stroke-width="1"/>`);
 
   // 이번 주 — PM 이 "지금 어디까지 왔나"를 읽는 기준선
-  if(hasAxis){
-    const now = new Date();
-    const nowS = serialOf(isoWeekOf(now.getFullYear(), now.getMonth() + 1, now.getDate()));
-    if(nowS >= minS && nowS <= maxS){
-      const nx = xOf(nowS) + ppw / 2;
-      out.push(`<line x1="${nx}" y1="${HEAD_H - 22}" x2="${nx}" y2="${H - 12}" stroke="${T.crit}" stroke-width="1.4" stroke-dasharray="4 3" opacity=".75"/>`);
-      out.push(`<text x="${nx + 5}" y="${HEAD_H - 10}" font-size="10" font-weight="650" fill="${T.crit}">이번 주</text>`);
-    }
-  }
+  if(hasAxis) drawNowLine(out, T, axisCfg);
 
   // 곡선은 막대 아래에 깔고, 이름표는 막대 위로 올린다 (아래 groups 뒤에 붙인다)
   const overlay = [];
@@ -1778,7 +2017,7 @@ function renderTable(){
 
   rows.push(`<thead><tr>
     <th style="width:60px">레벨</th><th style="width:68px">구분</th><th style="width:auto">품목명</th>
-    <th style="width:52px">버전</th><th style="width:62px">수량</th><th style="width:86px">단계</th><th style="width:32px"><span class="sr-only">삭제</span></th>
+    <th style="width:52px">버전</th><th style="width:62px">수량</th><th style="width:200px">단계</th><th style="width:32px"><span class="sr-only">삭제</span></th>
   </tr></thead><tbody>`);
 
   if(model.items.length){
@@ -1790,7 +2029,7 @@ function renderTable(){
         <td><input data-f="name" value="${esc(it.name)}"></td>
         <td><input data-f="version" value="${esc(it.version)}" class="mono"></td>
         <td class="num"><input data-f="qty" type="number" min="1" value="${it.qty}"></td>
-        <td><select data-f="stage">${stageOptions.map(o => `<option ${o === stageLabel(it.stage, it.state) ? "selected" : ""}>${o}</option>`).join("")}</select></td>
+        <td><input data-f="stage" value="${esc(formatStageChain(it))}" class="mono" placeholder="생산 26W12 > 입고중"></td>
         <td><button class="row-del" type="button" title="이 줄 삭제" aria-label="${esc(it.name)} 삭제">×</button></td>
       </tr>`);
     });
@@ -1840,11 +2079,10 @@ function commitRow(tr){
   };
   let line;
   if(type === "item"){
-    const st = normalizeStage(val("stage")) || { index:-1, state:"idle" };
     line = formatItem({
       level: val("level"), kind: val("kind"), name: val("name") || "이름 없음",
       version: normalizeVersion(val("version")), qty: toInt(val("qty"), 1),
-      stage: st.index, state: st.state,
+      stageText: val("stage") || "대기",   // 적은 그대로 되돌려 쓴다 — 주차가 날아가지 않게
       note: (model.items.find(i => i.row === row) || {}).note || ""
     });
   }else if(type === "test"){
@@ -1950,6 +2188,19 @@ $("#lens-seg").addEventListener("click", e => {
   if(b) setLens(b.dataset.lens);
 });
 
+function setAxis(mode){
+  flowAxis = mode === "date" ? "date" : "stage";
+  try{ localStorage.setItem(AXIS_KEY, flowAxis); }catch(e){}
+  document.querySelectorAll("#axis-seg button").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.axis === flowAxis)));
+  $("#axis-hint").textContent = AXIS_HINT[flowAxis];
+  renderFlow();
+}
+$("#axis-seg").addEventListener("click", e => {
+  const b = e.target.closest("button[data-axis]");
+  if(b) setAxis(b.dataset.axis);
+});
+
 /* ============================================================
    입력 연결
    ============================================================ */
@@ -1987,15 +2238,14 @@ document.querySelectorAll("#kind-seg button").forEach(b => {
 });
 $("#quick-item").addEventListener("submit", e => {
   e.preventDefault();
-  const st = normalizeStage($("#q-stage").value) || { index:-1, state:"idle" };
+  const wkTxt = $("#q-week").value.trim();
   const line = formatItem({
     level: $("#q-level").value,
     kind: $("#q-kind").value,
     name: $("#q-name").value.trim() || "이름 없음",
     version: $("#q-ver").value,
     qty: toInt($("#q-qty").value, 1),
-    stage: st.index,
-    state: st.state,
+    stageText: $("#q-stage").value + (wkTxt ? " " + wkTxt : ""),
     note: $("#q-note").value.trim()
   });
   setText(appendToSection(dsl.value, "item", line));
@@ -2086,7 +2336,7 @@ function stamp(){
 function toCSV(){
   const q = s => `"${String(s ?? "").replace(/"/g, '""')}"`;
   const rows = [["종류", "레벨", "품목명", "버전", "수량", "단계", "비고"]];
-  model.items.forEach(i => rows.push(["품목", LEVEL_BY_ID[i.level].ko, (i.kind === "addon" ? "+ " : "") + i.name, i.version, i.qty, stageLabel(i.stage, i.state), i.note]));
+  model.items.forEach(i => rows.push(["품목", LEVEL_BY_ID[i.level].ko, (i.kind === "addon" ? "+ " : "") + i.name, i.version, i.qty, formatStageChain(i), i.note]));
   model.tests.forEach(t => rows.push(["시험", t.targetRaw, t.name, "", t.qty, t.result, [t.date, t.note].filter(Boolean).join(" ")]));
   model.reuses.forEach(r => rows.push(["재활용", "", r.purpose, "", r.qty, r.from, r.note]));
   return "﻿" + rows.map(r => r.map(q).join(",")).join("\r\n");
@@ -2125,7 +2375,7 @@ function fromJSON(text){
     level: normalizeLevel(i.level) || i.level, kind: i.kind === "addon" ? "addon" : "main",
     name: i.name || "이름 없음", version: normalizeVersion(i.version),
     qty: toInt(i.qty, 1),
-    ...(() => { const s = normalizeStage(i.stage) || { index:-1, state:"idle" }; return { stage:s.index, state:s.state }; })(),
+    stageText: String(i.stage ?? "").trim() || "대기",
     note: i.note || ""
   }));
   const tests = (j.tests || []).map(t => formatTest({
@@ -2171,7 +2421,7 @@ $("#btn-exp-txt").addEventListener("click", () => download(`샘플플로우_${st
 $("#btn-exp-csv").addEventListener("click", () => download(`샘플플로우_${stamp()}.csv`, "text/csv", toCSV()));
 $("#btn-exp-json").addEventListener("click", () => {
   const out = {
-    items: model.items.map(i => ({ level:i.level, kind:i.kind, name:i.name, version:i.version, qty:i.qty, stage:stageLabel(i.stage, i.state), note:i.note })),
+    items: model.items.map(i => ({ level:i.level, kind:i.kind, name:i.name, version:i.version, qty:i.qty, stage:formatStageChain(i), note:i.note })),
     tests: model.tests.map(t => ({ name:t.name, target:t.targetRaw, qty:t.qty, date:t.date, result:t.result, note:t.note })),
     reuses: model.reuses.map(r => ({ purpose:r.purpose, from:r.from, qty:r.qty, note:r.note }))
   };
@@ -2270,8 +2520,15 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
   dsl.value = initial && initial.trim() ? initial : PRESET;
   dsl.scrollTop = 0;
 
-  let savedLens = "all";
-  try{ savedLens = localStorage.getItem(LENS_KEY) || "all"; }catch(e){}
+  let savedLens = "all", savedAxis = "stage";
+  try{
+    savedLens = localStorage.getItem(LENS_KEY) || "all";
+    savedAxis = localStorage.getItem(AXIS_KEY) || "stage";
+  }catch(e){}
+  flowAxis = savedAxis === "date" ? "date" : "stage";
+  document.querySelectorAll("#axis-seg button").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.axis === flowAxis)));
+  $("#axis-hint").textContent = AXIS_HINT[flowAxis];
   setLens(savedLens, { keepTab:true });
 })();
 </script>
