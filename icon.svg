@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="샘플 플로우 보드">
+  <rect width="512" height="512" rx="112" fill="#0F1413"/>
+  <!-- 셀 → 팩 → 링크. 색이 진해질수록 상위 레벨이라는 규칙을 아이콘에도 그대로 쓴다 -->
+  <g stroke-linecap="round" fill="none" stroke-width="26">
+    <line x1="132" y1="176" x2="380" y2="176" stroke="#7CC6CB"/>
+    <line x1="132" y1="256" x2="316" y2="256" stroke="#5AA4C2"/>
+    <line x1="132" y1="336" x2="252" y2="336" stroke="#8496D6"/>
+  </g>
+  <g fill="#0F1413">
+    <circle cx="132" cy="176" r="19"/><circle cx="256" cy="176" r="19"/><circle cx="380" cy="176" r="19"/>
+    <circle cx="132" cy="256" r="19"/><circle cx="316" cy="256" r="19"/>
+    <circle cx="132" cy="336" r="19"/><circle cx="252" cy="336" r="19"/>
+  </g>
+  <g fill="none" stroke-width="13">
+    <circle cx="132" cy="176" r="19" stroke="#7CC6CB"/><circle cx="256" cy="176" r="19" stroke="#7CC6CB"/><circle cx="380" cy="176" r="19" stroke="#7CC6CB"/>
+    <circle cx="132" cy="256" r="19" stroke="#5AA4C2"/><circle cx="316" cy="256" r="19" stroke="#5AA4C2"/>
+    <circle cx="132" cy="336" r="19" stroke="#8496D6"/><circle cx="252" cy="336" r="19" stroke="#8496D6"/>
+  </g>
+  <circle cx="256" cy="176" r="19" fill="#7CC6CB"/>
+  <circle cx="132" cy="256" r="19" fill="#5AA4C2"/>
+  <circle cx="132" cy="176" r="19" fill="#7CC6CB"/>
+  <circle cx="132" cy="336" r="19" fill="#8496D6"/>
+</svg>
