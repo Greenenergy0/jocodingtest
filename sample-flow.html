@@ -166,7 +166,13 @@ body{
    레이아웃
    ============================================================ */
 .work{display:grid;grid-template-columns:minmax(340px,392px) minmax(0,1fr);gap:18px;align-items:start;}
-@media (max-width:1080px){.work{grid-template-columns:minmax(0,1fr);}}
+/* 좁은 화면에서는 보는 쪽을 위로 올린다 — 폰으로 열 때는 대개 읽으러 오지 고치러 오지 않는다 */
+@media (max-width:1080px){
+  .work{grid-template-columns:minmax(0,1fr);}
+  .work > div{order:1;}
+  .work > section{order:2;}
+  textarea#dsl{min-height:260px;}
+}
 /* 그리드 칸이 내용에 밀려 넓어지지 않도록 — 넘치는 그림은 캔버스 안에서 스크롤된다 */
 .work > *{min-width:0;}
 
