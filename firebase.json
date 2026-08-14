@@ -4,13 +4,13 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "DEPLOY.md",
+      "blueprint.md"
     ],
     "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
+      { "source": "/flow", "destination": "/sample-flow.html" },
+      { "source": "**", "destination": "/index.html" }
     ]
   }
 }

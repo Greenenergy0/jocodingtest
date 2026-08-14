@@ -2,7 +2,7 @@
   "name": "샘플 플로우 보드",
   "short_name": "샘플 플로우",
   "description": "Cell·Pack·LINK 샘플의 구성표 소요 전개부터 시험·재활용까지",
-  "start_url": "/sample-flow.html",
+  "start_url": "/flow",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
