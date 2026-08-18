@@ -1,0 +1,20 @@
+{
+  "name": "lecture-room-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "실시간 강의실의 검증·빌드 스크립트 (앱 자체는 의존성이 없습니다)",
+  "scripts": {
+    "test": "node verify-qr.js && node e2e-local.js && node e2e-cloud.js",
+    "test:qr": "node verify-qr.js",
+    "test:local": "node e2e-local.js",
+    "test:cloud": "node e2e-cloud.js",
+    "build": "node bundle.js",
+    "mock-db": "node mock-rtdb.js"
+  },
+  "devDependencies": {
+    "jsqr": "^1.4.0",
+    "playwright": "^1.49.0",
+    "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4"
+  }
+}
