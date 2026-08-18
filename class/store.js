@@ -33,9 +33,28 @@
     return randomCode(4).toLowerCase() + Date.now().toString(36);
   }
 
+  // 시크릿 모드나 저장소가 막힌 환경(임베드 등)에서는 메모리로 대체한다.
+  // 새로고침하면 사라지지만, 한 번의 강의는 끝까지 돌아간다.
+  var storage = (function () {
+    try {
+      var probe = '__qrclass_probe__';
+      global.localStorage.setItem(probe, '1');
+      global.localStorage.removeItem(probe);
+      return global.localStorage;
+    } catch (err) {
+      var memory = {};
+      return {
+        persistent: false,
+        getItem: function (k) { return Object.prototype.hasOwnProperty.call(memory, k) ? memory[k] : null; },
+        setItem: function (k, v) { memory[k] = String(v); },
+        removeItem: function (k) { delete memory[k]; }
+      };
+    }
+  })();
+
   function readJSON(key, fallback) {
     try {
-      var raw = global.localStorage.getItem(key);
+      var raw = storage.getItem(key);
       return raw ? JSON.parse(raw) : fallback;
     } catch (err) {
       return fallback;
@@ -44,7 +63,7 @@
 
   function writeJSON(key, value) {
     try {
-      global.localStorage.setItem(key, JSON.stringify(value));
+      storage.setItem(key, JSON.stringify(value));
       return true;
     } catch (err) {
       return false;
@@ -261,9 +280,20 @@
       var rooms = readJSON(LS_ROOMS, {});
       delete rooms[code];
       writeJSON(LS_ROOMS, rooms);
-      global.localStorage.removeItem(LS_SCORES + code);
+      storage.removeItem(LS_SCORES + code);
     },
     addLocalScore: function (code, entry) { return LocalStore.submitScore(code, entry); },
+
+    // 이 기기의 기록을 지우고, 공유 모드면 데이터베이스 쪽도 함께 비운다
+    clearScores: function (code) {
+      storage.removeItem(LS_SCORES + code);
+      broadcast(code);
+      if (active.mode !== 'cloud') return Promise.resolve();
+      return fetch(active._url(code + '/scores'), { method: 'DELETE' }).then(function () { });
+    },
+
+    // 저장소가 막힌 환경에서는 메모리로 동작한다 (새로고침 시 초기화)
+    isPersistent: storage.persistent !== false,
 
     getMe: getMe,
     setMe: setMe,

@@ -667,6 +667,9 @@
           '<button class="btn ghost" id="demo-btn">데모 불러오기</button>' +
         '</div>' +
         '<div class="stack">' + list + '</div>' +
+        (window.Store.isPersistent ? '' :
+          '<div class="notice warn">이 브라우저에서 저장소를 쓸 수 없어 <b>메모리로만</b> 동작합니다. ' +
+          '새로고침하면 만든 강의가 사라지니, 실제 강의에서는 시크릿 모드를 끄거나 배포된 주소에서 열어 주세요.</div>') +
         (window.Store.isCloud ? '' :
           '<div class="notice warn">로컬 모드로 동작 중입니다. 강의 내용은 QR 안에 담겨 전달되고, 학생 점수는 ' +
           '결과 코드로 모읍니다. 점수를 자동으로 모으려면 <span class="mono">config.js</span> 에 ' +
@@ -929,7 +932,7 @@
 
       $('#reset-scores').addEventListener('click', function () {
         if (!confirm('이 강의의 명예의 전당 기록을 모두 지울까요?')) return;
-        clearScores(room.code).then(function () {
+        window.Store.clearScores(room.code).then(function () {
           var body = $('#live-rank');
           if (body) body.innerHTML = rankRows([], null);
         });
@@ -970,13 +973,6 @@
     document.addEventListener('keydown', onKey);
     document.body.appendChild(overlay);
     cleanup(close);
-  }
-
-  function clearScores(code) {
-    try { localStorage.removeItem('qrclass.scores.' + code); } catch (err) { /* 무시 */ }
-    if (!window.Store.isCloud) return Promise.resolve();
-    return fetch(String(config.databaseURL).replace(/\/+$/, '') + '/rooms/' + code + '/scores.json', { method: 'DELETE' })
-      .then(function () { });
   }
 
   // 학생이 열게 될 주소를 만든다.
